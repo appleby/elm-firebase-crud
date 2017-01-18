@@ -1,0 +1,10 @@
+{
+    "tasks": [
+        { "id": "1", "name": "Task 1", "frequency": "daily" },
+        { "id": "2", "name": "Task 2", "frequency": "daily" },
+        { "id": "3", "name": "Task 3", "frequency": "daily" },
+        { "id": "4", "name": "Task 4", "frequency": "weekly" },
+        { "id": "5", "name": "Task 5", "frequency": "weekly" },
+        { "id": "6", "name": "Task 6", "frequency": "monthly" }
+    ]
+}
