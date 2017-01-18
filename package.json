@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "description": "Schedules for people who hate schedules.",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "scripts": {
+      "api": "node api.js",
+      "test": "echo \"Error: no test specified\" && exit 1",
+      "dev": "elm-live --before-build=./cpstatic.sh --dir=public -- src/Main.elm --output=public/elm.js"
   },
   "repository": {
     "type": "git",
