@@ -18,5 +18,9 @@
   ],
   "author": "Mike Appleby",
   "license": "BSD-3-Clause",
-  "homepage": "https://bitbucket.org/appleby/timeslots#readme"
+  "homepage": "https://bitbucket.org/appleby/timeslots#readme",
+  "devDependencies": {
+    "elm-live": "^2.7.4",
+    "json-server": "^0.9.4"
+  }
 }

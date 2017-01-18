@@ -1,4 +1,5 @@
 /elm-stuff
+/node_modules
 /public
 .firebaserc
 database.rules.json
