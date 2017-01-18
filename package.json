@@ -1,0 +1,22 @@
+{
+  "name": "timeslots",
+  "version": "0.1.0",
+  "description": "Schedules for people who hate schedules.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@bitbucket.org/appleby/timeslots.git"
+  },
+  "keywords": [
+    "time-management",
+    "time-tracking",
+    "scheduling",
+    "daily-planning"
+  ],
+  "author": "Mike Appleby",
+  "license": "BSD-3-Clause",
+  "homepage": "https://bitbucket.org/appleby/timeslots#readme"
+}
