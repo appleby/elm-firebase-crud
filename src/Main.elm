@@ -1,7 +1,10 @@
 module Main exposing (..)
 
-import Html exposing (Html, a, div, text)
+import Html exposing (..)
+import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
+import Bootstrap.Grid exposing (..)
+import Bootstrap.Navbar exposing (..)
 
 
 main : Program Never Model Msg
@@ -54,21 +57,50 @@ update msg model =
             ( { model | page = page }, Cmd.none )
 
 
+navLink : Page -> Page -> String -> Html Msg
+navLink currentPage linkTo linkText =
+    let
+        attrs =
+            if currentPage == linkTo then
+                [ class "active" ]
+            else
+                []
+    in
+        li attrs [ a [ onClick (Navigate linkTo) ] [ text linkText ] ]
+
+
+myNavbar : Page -> Html Msg
+myNavbar currentPage =
+    navbar
+        DefaultNavbar
+        [ class "navbar-static-top" ]
+        [ container
+            [ navbarHeader
+                []
+                [ navbarHamburger "#navbar"
+                , navbarBrand
+                    [ onClick (Navigate HomePage) ]
+                    [ text "timeslots" ]
+                ]
+            , navbarCollapse
+                [ id "navbar" ]
+                [ navbarList
+                    NavbarNav
+                    NavbarDefault
+                    []
+                    [ navLink currentPage HomePage "Home"
+                    , navLink currentPage AddTaskPage "Add Task"
+                    ]
+                ]
+            ]
+        ]
+
+
 view : Model -> Html Msg
 view model =
     case model.page of
         HomePage ->
-            div []
-                [ text "This is the Homepage "
-                , a [ onClick (Navigate HomePage) ] [ text "Home" ]
-                , text " | "
-                , a [ onClick (Navigate AddTaskPage) ] [ text "Add Task" ]
-                ]
+            myNavbar HomePage
 
         AddTaskPage ->
-            div []
-                [ text "This is the AddTaskPage "
-                , a [ onClick (Navigate HomePage) ] [ text "Home" ]
-                , text " | "
-                , a [ onClick (Navigate AddTaskPage) ] [ text "Add Task" ]
-                ]
+            myNavbar AddTaskPage
