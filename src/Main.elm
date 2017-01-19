@@ -4,6 +4,7 @@ import Html exposing (Html, a, div, text)
 import Html.Events exposing (onClick)
 
 
+main : Program Never Model Msg
 main =
     Html.program
         { init = init
