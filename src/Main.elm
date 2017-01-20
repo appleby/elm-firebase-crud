@@ -8,11 +8,13 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import Http
 import Json.Decode
+import Navigation exposing (Location)
+import UrlParser exposing ((</>))
 
 
 main : Program Never Model Msg
 main =
-    Html.program
+    Navigation.program OnLocationChange
         { init = init
         , update = update
         , view = view
@@ -20,16 +22,75 @@ main =
         }
 
 
-type Page
-    = HomePage
-    | AddTaskPage
-    | ListTasksPage
-
-
 type Frequency
     = Daily
     | Weekly
     | Monthly
+
+
+type alias TaskId =
+    Int
+
+
+type alias Task =
+    { id : TaskId
+    , title : String
+    , tags : List String
+    , freq : Frequency
+    }
+
+
+type alias Model =
+    { tasks : List Task
+    , route : Route
+    }
+
+
+type Route
+    = HomeRoute
+    | TasksRoute
+    | TaskRoute TaskId
+    | NotFoundRoute
+
+
+routeToString : Route -> String
+routeToString route =
+    case route of
+        HomeRoute ->
+            "#"
+
+        TasksRoute ->
+            "#tasks"
+
+        TaskRoute id ->
+            "#tasks/" ++ (toString id)
+
+        NotFoundRoute ->
+            "#notfound"
+
+
+matchers : UrlParser.Parser (Route -> a) a
+matchers =
+    UrlParser.oneOf
+        [ UrlParser.map HomeRoute UrlParser.top
+        , UrlParser.map TaskRoute (UrlParser.s "tasks" </> UrlParser.int)
+        , UrlParser.map TasksRoute (UrlParser.s "tasks")
+        ]
+
+
+parseLocation : Location -> Route
+parseLocation location =
+    case (UrlParser.parseHash matchers location) of
+        Just route ->
+            route
+
+        Nothing ->
+            NotFoundRoute
+
+
+initModel : Route -> Model
+initModel route =
+    { tasks = [], route = route }
 
 
 freqOfString : String -> Result String Frequency
@@ -59,20 +120,6 @@ freqToString freq =
 
         Monthly ->
             "monthly"
-
-
-type alias Task =
-    { id : Int
-    , title : String
-    , tags : List String
-    , freq : Frequency
-    }
-
-
-type alias Model =
-    { tasks : List Task
-    , page : Page
-    }
 
 
 fetchTasksUrl : String
@@ -105,21 +152,33 @@ freqDecoder str =
             Json.Decode.fail ("unable to decode frequency: " ++ msg)
 
 
-init : ( Model, Cmd Msg )
-init =
-    ( { tasks = [], page = HomePage }, fetchTasks )
+init : Location -> ( Model, Cmd Msg )
+init location =
+    let
+        initRoute =
+            parseLocation location
+    in
+        ( initModel initRoute, fetchTasks )
 
 
 type Msg
-    = Navigate Page
+    = OnLocationChange Location
+    | NewUrl String
     | FetchTasksDone (Result Http.Error (List Task))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Navigate page ->
-            ( { model | page = page }, Cmd.none )
+        NewUrl url ->
+            ( model, Navigation.newUrl url )
+
+        OnLocationChange location ->
+            let
+                newRoute =
+                    parseLocation location
+            in
+                ( { model | route = newRoute }, Cmd.none )
 
         FetchTasksDone (Ok tasks) ->
             ( { model | tasks = tasks }, Cmd.none )
@@ -132,20 +191,20 @@ update msg model =
                 ( model, Cmd.none )
 
 
-navLink : Page -> Page -> String -> Html Msg
-navLink currentPage linkTo linkText =
+navLink : Route -> Route -> String -> Html Msg
+navLink currentRoute linkTo linkText =
     let
         attrs =
-            if currentPage == linkTo then
+            if currentRoute == linkTo then
                 [ class "active" ]
             else
                 []
     in
-        li attrs [ a [ onClick (Navigate linkTo) ] [ text linkText ] ]
+        li attrs [ a [ href (routeToString linkTo) ] [ text linkText ] ]
 
 
-myNavbar : Page -> Html Msg
-myNavbar currentPage =
+myNavbar : Route -> Html Msg
+myNavbar currentRoute =
     navbar
         DefaultNavbar
         [ class "navbar-static-top" ]
@@ -154,7 +213,7 @@ myNavbar currentPage =
                 []
                 [ navbarHamburger "#navbar"
                 , navbarBrand
-                    [ onClick (Navigate HomePage) ]
+                    [ onClick (NewUrl "#") ]
                     [ text "timeslots" ]
                 ]
             , navbarCollapse
@@ -163,9 +222,8 @@ myNavbar currentPage =
                     NavbarNav
                     NavbarDefault
                     []
-                    [ navLink currentPage HomePage "Home"
-                    , navLink currentPage AddTaskPage "Add Task"
-                    , navLink currentPage ListTasksPage "List Tasks"
+                    [ navLink currentRoute HomeRoute "Home"
+                    , navLink currentRoute TasksRoute "List Tasks"
                     ]
                 ]
             ]
@@ -197,24 +255,26 @@ viewTasks tasks =
         ]
 
 
+page : Model -> Html Msg
+page model =
+    case model.route of
+        HomeRoute ->
+            div [] []
+
+        TasksRoute ->
+            container
+                [ row [ viewTasks model.tasks ] ]
+
+        TaskRoute taskId ->
+            div [] []
+
+        NotFoundRoute ->
+            div [] []
+
+
 view : Model -> Html Msg
 view model =
-    case model.page of
-        HomePage ->
-            div []
-                [ myNavbar HomePage
-                ]
-
-        AddTaskPage ->
-            div []
-                [ myNavbar AddTaskPage
-                ]
-
-        ListTasksPage ->
-            div []
-                [ myNavbar ListTasksPage
-                , container
-                    [ row
-                        [ viewTasks model.tasks ]
-                    ]
-                ]
+    div []
+        [ myNavbar model.route
+        , page model
+        ]
