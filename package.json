@@ -4,7 +4,7 @@
   "description": "Schedules for people who hate schedules.",
   "main": "index.js",
   "scripts": {
-    "api": "node api.js",
+    "api": "json-server --port 4000 --watch json-server/db.json",
     "build": "webpack",
     "watch": "webpack --watch",
     "dev": "webpack-dev-server --port 3000",

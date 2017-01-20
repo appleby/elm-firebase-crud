@@ -6,12 +6,12 @@
           "tags": ["home", "reading", "study"]
         },
         { "id": 2,
-          "title": "Anki",
+          "title": "Review Anki",
           "frequency": "daily",
           "tags": ["home", "study"]
         },
         { "id": 3,
-          "title": "Project",
+          "title": "Work on project",
           "frequency": "daily",
           "tags": ["work", "programming"]
         },
