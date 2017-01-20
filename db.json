@@ -1,10 +1,34 @@
 {
     "tasks": [
-        { "id": "1", "name": "Task 1", "frequency": "daily" },
-        { "id": "2", "name": "Task 2", "frequency": "daily" },
-        { "id": "3", "name": "Task 3", "frequency": "daily" },
-        { "id": "4", "name": "Task 4", "frequency": "weekly" },
-        { "id": "5", "name": "Task 5", "frequency": "weekly" },
-        { "id": "6", "name": "Task 6", "frequency": "monthly" }
+        { "id": 1,
+          "title": "Read CLRS",
+          "frequency": "daily",
+          "tags": ["home", "reading", "study"]
+        },
+        { "id": 2,
+          "title": "Anki",
+          "frequency": "daily",
+          "tags": ["home", "study"]
+        },
+        { "id": 3,
+          "title": "Project",
+          "frequency": "daily",
+          "tags": ["work", "programming"]
+        },
+        { "id": 4,
+          "title": "Fast.ai course",
+          "frequency": "daily",
+          "tags": ["home", "study", "ml", "course"]
+        },
+        { "id": 5,
+          "title": "Paint",
+          "frequency": "weekly",
+          "tags": ["home", "hobby", "art", "painting"]
+        },
+        { "id": 6,
+          "title": "Sumi-e",
+          "frequency": "monthly",
+          "tags": ["home", "hobby", "art", "sumi-e"]
+        }
     ]
 }
