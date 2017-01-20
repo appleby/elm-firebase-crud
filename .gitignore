@@ -1,6 +1,7 @@
 /elm-stuff
 /node_modules
 /public
+/json-server/db.json
 TAGS
 .firebaserc
 database.rules.json
