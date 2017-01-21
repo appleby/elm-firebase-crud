@@ -54,7 +54,13 @@ type alias Model =
     { tasks : List Task
     , route : Route
     , savePending : Bool
+    , saveSuccess : Maybe Bool
     }
+
+
+resetPageState : Model -> Model
+resetPageState model =
+    { model | savePending = False, saveSuccess = Nothing }
 
 
 type Route
@@ -106,7 +112,7 @@ parseLocation location =
 
 initModel : Route -> Model
 initModel route =
-    { tasks = [], route = route, savePending = False }
+    { tasks = [], route = route, savePending = False, saveSuccess = Nothing }
 
 
 freqOfString : String -> Result String Frequency
@@ -227,8 +233,11 @@ update msg model =
             let
                 newRoute =
                     parseLocation location
+
+                resetModel =
+                    resetPageState model
             in
-                ( { model | route = newRoute }, Cmd.none )
+                ( { resetModel | route = newRoute }, Cmd.none )
 
         FetchTasksDone (Ok tasks) ->
             ( { model | tasks = tasks }, Cmd.none )
@@ -300,7 +309,9 @@ update msg model =
             -- TODO: disable submit button during submit pending
             case findTaskById taskId model.tasks of
                 Just task ->
-                    ( { model | savePending = True }, saveTask task )
+                    ( { model | savePending = True, saveSuccess = Nothing }
+                    , saveTask task
+                    )
 
                 Nothing ->
                     -- TODO: real error handling
@@ -311,14 +322,16 @@ update msg model =
                         ( model, Cmd.none )
 
         SaveTaskDone (Ok _) ->
-            -- TODO: display save success flash
-            ( { model | savePending = False }, Cmd.none )
+            ( { model | savePending = False, saveSuccess = Just True }
+            , Cmd.none
+            )
 
         SaveTaskDone (Err error) ->
-            -- TODO: display save failure flash
             -- TODO: real error handling
             -- TODO: only fetch the required task?
-            ( { model | savePending = False }, fetchTasks )
+            ( { model | savePending = False, saveSuccess = Just False }
+            , fetchTasks
+            )
 
 
 navLink : Route -> Route -> String -> Html Msg
@@ -414,10 +427,31 @@ frequencySelect taskId selectedFrequency =
             |> select [ class "form-control", onInput (EditTaskFrequency taskId) ]
 
 
-editTaskForm : Task -> Bool -> Html Msg
-editTaskForm task savePending =
+saveTaskAlert : Maybe Bool -> Html Msg
+saveTaskAlert saveSuccess =
+    case saveSuccess of
+        Just success ->
+            if success then
+                div [ class "alert alert-success" ]
+                    [ strong [] [ text "Ok! " ]
+                    , text "Task saved"
+                    ]
+            else
+                -- TODO: dispaly error?
+                div [ class "alert alert-danger" ]
+                    [ strong [] [ text "Error! " ]
+                    , text "Failed to save task!"
+                    ]
+
+        Nothing ->
+            div [] []
+
+
+editTaskForm : Task -> Bool -> Maybe Bool -> Html Msg
+editTaskForm task savePending saveSuccess =
     container
-        [ row
+        [ row [ saveTaskAlert saveSuccess ]
+        , row
             [ Bootstrap.Forms.form
                 FormDefault
                 [ onSubmit (SaveTask task.id) ]
@@ -472,7 +506,7 @@ page model =
         TaskEditRoute taskId ->
             case findTaskById taskId model.tasks of
                 Just task ->
-                    editTaskForm task model.savePending
+                    editTaskForm task model.savePending model.saveSuccess
 
                 Nothing ->
                     -- TODO: return real error here
