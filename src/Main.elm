@@ -443,15 +443,14 @@ editTaskForm task savePending =
                     [ formLabel [ for "taskFrequency" ] [ text "Frequency" ]
                     , frequencySelect task.id task.freq
                     ]
-                , btn BtnDefault
-                    []
-                    []
-                    (if savePending then
+                , if savePending then
+                    btn BtnDefault
+                        []
+                        []
                         [ type_ "submit", disabled True ]
-                     else
-                        [ type_ "submit" ]
-                    )
-                    [ text "Save Task" ]
+                        [ text "Save Task ", i [ class "fa fa-spinner fa-spin" ] [] ]
+                  else
+                    btn BtnDefault [] [] [ type_ "submit" ] [ text "Save Task" ]
                 ]
             ]
         ]
