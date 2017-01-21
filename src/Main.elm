@@ -53,6 +53,7 @@ findTaskById id =
 type alias Model =
     { tasks : List Task
     , route : Route
+    , savePending : Bool
     }
 
 
@@ -105,7 +106,7 @@ parseLocation location =
 
 initModel : Route -> Model
 initModel route =
-    { tasks = [], route = route }
+    { tasks = [], route = route, savePending = False }
 
 
 freqOfString : String -> Result String Frequency
@@ -299,7 +300,7 @@ update msg model =
             -- TODO: disable submit button during submit pending
             case findTaskById taskId model.tasks of
                 Just task ->
-                    ( model, saveTask task )
+                    ( { model | savePending = True }, saveTask task )
 
                 Nothing ->
                     -- TODO: real error handling
@@ -311,13 +312,13 @@ update msg model =
 
         SaveTaskDone (Ok _) ->
             -- TODO: display save success flash
-            ( model, Cmd.none )
+            ( { model | savePending = False }, Cmd.none )
 
         SaveTaskDone (Err error) ->
             -- TODO: display save failure flash
             -- TODO: real error handling
             -- TODO: only fetch the required task?
-            ( model, fetchTasks )
+            ( { model | savePending = False }, fetchTasks )
 
 
 navLink : Route -> Route -> String -> Html Msg
@@ -413,8 +414,8 @@ frequencySelect taskId selectedFrequency =
             |> select [ class "form-control", onInput (EditTaskFrequency taskId) ]
 
 
-editTaskForm : Task -> Html Msg
-editTaskForm task =
+editTaskForm : Task -> Bool -> Html Msg
+editTaskForm task savePending =
     container
         [ row
             [ Bootstrap.Forms.form
@@ -442,7 +443,15 @@ editTaskForm task =
                     [ formLabel [ for "taskFrequency" ] [ text "Frequency" ]
                     , frequencySelect task.id task.freq
                     ]
-                , btn BtnDefault [] [] [ type_ "submit" ] [ text "Save Task" ]
+                , btn BtnDefault
+                    []
+                    []
+                    (if savePending then
+                        [ type_ "submit", disabled True ]
+                     else
+                        [ type_ "submit" ]
+                    )
+                    [ text "Save Task" ]
                 ]
             ]
         ]
@@ -464,7 +473,7 @@ page model =
         TaskEditRoute taskId ->
             case findTaskById taskId model.tasks of
                 Just task ->
-                    editTaskForm task
+                    editTaskForm task model.savePending
 
                 Nothing ->
                     -- TODO: return real error here
