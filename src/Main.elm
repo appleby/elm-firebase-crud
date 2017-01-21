@@ -199,7 +199,7 @@ type Msg
     | EditTaskTags TaskId String
     | EditTaskFrequency TaskId String
     | SaveTask TaskId
-    | OnSave (Result Http.Error Task)
+    | SaveTaskDone (Result Http.Error Task)
 
 
 saveTask : Task -> Cmd Msg
@@ -213,7 +213,7 @@ saveTask task =
         , url = saveTaskUrl task.id
         , withCredentials = False
         }
-        |> Http.send OnSave
+        |> Http.send SaveTaskDone
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -309,11 +309,11 @@ update msg model =
                     in
                         ( model, Cmd.none )
 
-        OnSave (Ok _) ->
+        SaveTaskDone (Ok _) ->
             -- TODO: display save success flash
             ( model, Cmd.none )
 
-        OnSave (Err error) ->
+        SaveTaskDone (Err error) ->
             -- TODO: display save failure flash
             -- TODO: real error handling
             -- TODO: only fetch the required task?
