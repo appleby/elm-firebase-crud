@@ -447,6 +447,11 @@ saveTaskAlert saveSuccess =
             div [] []
 
 
+maxInputLength : Int
+maxInputLength =
+    256
+
+
 editTaskForm : Task -> Bool -> Maybe Bool -> Html Msg
 editTaskForm task savePending saveSuccess =
     container
@@ -460,6 +465,7 @@ editTaskForm task savePending saveSuccess =
                     , formInput
                         [ id "taskTitle"
                         , value task.title
+                        , maxlength maxInputLength
                         , onInput (EditTaskTitle task.id)
                         ]
                         []
@@ -469,6 +475,7 @@ editTaskForm task savePending saveSuccess =
                     , formInput
                         [ id "taskTags"
                         , value (String.join ", " task.tags)
+                        , maxlength maxInputLength
                         , onInput (EditTaskTags task.id)
                         ]
                         []
