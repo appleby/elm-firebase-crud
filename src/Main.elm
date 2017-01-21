@@ -193,7 +193,7 @@ init location =
 
 type Msg
     = OnLocationChange Location
-    | NewUrl String
+    | Goto Route
     | FetchTasksDone (Result Http.Error (List Task))
     | EditTaskTitle TaskId String
     | EditTaskTags TaskId String
@@ -219,8 +219,8 @@ saveTask task =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        NewUrl url ->
-            ( model, Navigation.newUrl url )
+        Goto newRoute ->
+            ( model, Navigation.newUrl (routeToString newRoute) )
 
         OnLocationChange location ->
             let
@@ -342,7 +342,7 @@ myNavbar currentRoute =
                 []
                 [ navbarHamburger "#navbar"
                 , navbarBrand
-                    [ onClick (NewUrl "#") ]
+                    [ onClick (Goto HomeRoute) ]
                     [ text "timeslots" ]
                 ]
             , navbarCollapse
@@ -372,7 +372,7 @@ viewTask task =
                 , btn BtnDefault
                     []
                     []
-                    [ onClick (NewUrl <| routeToString <| TaskEditRoute task.id) ]
+                    [ onClick (Goto <| TaskEditRoute task.id) ]
                     [ text "edit" ]
                 , btn BtnDefault [] [] [] [ text "delete" ]
                 ]
