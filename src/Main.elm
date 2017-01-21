@@ -1,14 +1,19 @@
 module Main exposing (..)
 
+import Bootstrap.Buttons exposing (..)
+import Bootstrap.Forms exposing (..)
 import Bootstrap.Grid exposing (..)
 import Bootstrap.Navbar exposing (..)
 import Debug
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Json.Decode
+import Json.Encode
+import List.Extra
 import Navigation exposing (Location)
+import String
 import UrlParser exposing ((</>))
 
 
@@ -40,6 +45,11 @@ type alias Task =
     }
 
 
+findTaskById : TaskId -> List Task -> Maybe Task
+findTaskById id =
+    List.Extra.find (\t -> t.id == id)
+
+
 type alias Model =
     { tasks : List Task
     , route : Route
@@ -50,6 +60,7 @@ type Route
     = HomeRoute
     | TasksRoute
     | TaskRoute TaskId
+    | TaskEditRoute TaskId
     | NotFoundRoute
 
 
@@ -65,6 +76,9 @@ routeToString route =
         TaskRoute id ->
             "#tasks/" ++ (toString id)
 
+        TaskEditRoute id ->
+            "#tasks/" ++ (toString id) ++ "/edit"
+
         NotFoundRoute ->
             "#notfound"
 
@@ -73,6 +87,7 @@ matchers : UrlParser.Parser (Route -> a) a
 matchers =
     UrlParser.oneOf
         [ UrlParser.map HomeRoute UrlParser.top
+        , UrlParser.map TaskEditRoute (UrlParser.s "tasks" </> UrlParser.int </> UrlParser.s "edit")
         , UrlParser.map TaskRoute (UrlParser.s "tasks" </> UrlParser.int)
         , UrlParser.map TasksRoute (UrlParser.s "tasks")
         ]
@@ -122,6 +137,11 @@ freqToString freq =
             "monthly"
 
 
+saveTaskUrl : TaskId -> String
+saveTaskUrl id =
+    "http://localhost:4000/tasks/" ++ (toString id)
+
+
 fetchTasksUrl : String
 fetchTasksUrl =
     "http://localhost:4000/tasks"
@@ -131,6 +151,16 @@ fetchTasks : Cmd Msg
 fetchTasks =
     Http.get fetchTasksUrl (Json.Decode.list taskDecoder)
         |> Http.send FetchTasksDone
+
+
+encodeTask : Task -> Json.Encode.Value
+encodeTask task =
+    Json.Encode.object
+        [ ( "id", Json.Encode.int task.id )
+        , ( "title", Json.Encode.string task.title )
+        , ( "tags", List.map Json.Encode.string task.tags |> Json.Encode.list )
+        , ( "frequency", Json.Encode.string (freqToString task.freq) )
+        ]
 
 
 taskDecoder : Json.Decode.Decoder Task
@@ -165,6 +195,25 @@ type Msg
     = OnLocationChange Location
     | NewUrl String
     | FetchTasksDone (Result Http.Error (List Task))
+    | EditTaskTitle TaskId String
+    | EditTaskTags TaskId String
+    | EditTaskFrequency TaskId String
+    | SaveTask TaskId
+    | OnSave (Result Http.Error Task)
+
+
+saveTask : Task -> Cmd Msg
+saveTask task =
+    Http.request
+        { body = encodeTask task |> Http.jsonBody
+        , expect = Http.expectJson taskDecoder
+        , headers = []
+        , method = "PATCH"
+        , timeout = Nothing
+        , url = saveTaskUrl task.id
+        , withCredentials = False
+        }
+        |> Http.send OnSave
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -189,6 +238,86 @@ update msg model =
                     Debug.log "Fetch error" error
             in
                 ( model, Cmd.none )
+
+        EditTaskTitle taskId newTitle ->
+            let
+                newTasks =
+                    List.map
+                        (\t ->
+                            if t.id == taskId then
+                                { t | title = newTitle }
+                            else
+                                t
+                        )
+                        model.tasks
+            in
+                ( { model | tasks = newTasks }, Cmd.none )
+
+        EditTaskTags taskId newTagsStr ->
+            let
+                newTags =
+                    String.split "," newTagsStr
+                        |> List.map String.trim
+
+                newTasks =
+                    List.map
+                        (\t ->
+                            if t.id == taskId then
+                                { t | tags = newTags }
+                            else
+                                t
+                        )
+                        model.tasks
+            in
+                ( { model | tasks = newTasks }, Cmd.none )
+
+        EditTaskFrequency taskId newFrequencyStr ->
+            case freqOfString newFrequencyStr of
+                Ok newFrequency ->
+                    let
+                        newTasks =
+                            List.map
+                                (\t ->
+                                    if t.id == taskId then
+                                        { t | freq = newFrequency }
+                                    else
+                                        t
+                                )
+                                model.tasks
+                    in
+                        ( { model | tasks = newTasks }, Cmd.none )
+
+                Err str ->
+                    -- TODO: real error handling
+                    let
+                        _ =
+                            Debug.log str
+                    in
+                        ( model, Cmd.none )
+
+        SaveTask taskId ->
+            -- TODO: disable submit button during submit pending
+            case findTaskById taskId model.tasks of
+                Just task ->
+                    ( model, saveTask task )
+
+                Nothing ->
+                    -- TODO: real error handling
+                    let
+                        _ =
+                            Debug.log <| "SaveTask: invalid taskId " ++ (toString taskId)
+                    in
+                        ( model, Cmd.none )
+
+        OnSave (Ok _) ->
+            -- TODO: display save success flash
+            ( model, Cmd.none )
+
+        OnSave (Err error) ->
+            -- TODO: display save failure flash
+            -- TODO: real error handling
+            -- TODO: only fetch the required task?
+            ( model, fetchTasks )
 
 
 navLink : Route -> Route -> String -> Html Msg
@@ -236,7 +365,18 @@ viewTask task =
         [ td [] [ text (toString task.id) ]
         , td [] [ text task.title ]
         , td [] [ text (freqToString task.freq) ]
-        , td [] (List.intersperse ", " task.tags |> List.map text)
+        , td [] [ text (String.join ", " task.tags) ]
+        , td []
+            [ div [ class "btn-group" ]
+                [ btn BtnDefault [] [] [] [ text "view" ]
+                , btn BtnDefault
+                    []
+                    []
+                    [ onClick (NewUrl <| routeToString <| TaskEditRoute task.id) ]
+                    [ text "edit" ]
+                , btn BtnDefault [] [] [] [ text "delete" ]
+                ]
+            ]
         ]
 
 
@@ -249,9 +389,62 @@ viewTasks tasks =
                 , th [] [ text "Title" ]
                 , th [] [ text "Frequency" ]
                 , th [] [ text "Tags" ]
+                , th [] [ text "Action" ]
                 ]
             ]
         , tbody [] (List.map viewTask tasks)
+        ]
+
+
+frequencySelect : TaskId -> Frequency -> Html Msg
+frequencySelect taskId selectedFrequency =
+    let
+        opt frequency =
+            let
+                attrs =
+                    if frequency == selectedFrequency then
+                        [ selected True ]
+                    else
+                        []
+            in
+                option attrs [ text (freqToString frequency) ]
+    in
+        List.map opt [ Daily, Weekly, Monthly ]
+            |> select [ class "form-control", onInput (EditTaskFrequency taskId) ]
+
+
+editTaskForm : Task -> Html Msg
+editTaskForm task =
+    container
+        [ row
+            [ Bootstrap.Forms.form
+                FormDefault
+                [ onSubmit (SaveTask task.id) ]
+                [ formGroup FormGroupDefault
+                    [ formLabel [ for "taskTitle" ] [ text "Title" ]
+                    , formInput
+                        [ id "taskTitle"
+                        , value task.title
+                        , onInput (EditTaskTitle task.id)
+                        ]
+                        []
+                    ]
+                , formGroup FormGroupDefault
+                    [ formLabel [ for "taskTags" ] [ text "Tags" ]
+                    , formInput
+                        [ id "taskTags"
+                        , value (String.join ", " task.tags)
+                        , onInput (EditTaskTags task.id)
+                        ]
+                        []
+                    ]
+                , formGroup FormGroupDefault
+                    [ formLabel [ for "taskFrequency" ] [ text "Frequency" ]
+                    , frequencySelect task.id task.freq
+                    ]
+                , btn BtnDefault [] [] [ type_ "submit" ] [ text "Save Task" ]
+                ]
+            ]
         ]
 
 
@@ -267,6 +460,15 @@ page model =
 
         TaskRoute taskId ->
             div [] []
+
+        TaskEditRoute taskId ->
+            case findTaskById taskId model.tasks of
+                Just task ->
+                    editTaskForm task
+
+                Nothing ->
+                    -- TODO: return real error here
+                    container [ row [ text <| "Error: No task with id: " ++ (toString taskId) ] ]
 
         NotFoundRoute ->
             div [] []
