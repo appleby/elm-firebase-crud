@@ -55,12 +55,13 @@ type alias Model =
     , route : Route
     , savePending : Bool
     , saveSuccess : Maybe Bool
+    , addTask : Task
     }
 
 
 resetPageState : Model -> Model
 resetPageState model =
-    { model | savePending = False, saveSuccess = Nothing }
+    { model | addTask = emptyTask, savePending = False, saveSuccess = Nothing }
 
 
 type Route
@@ -68,6 +69,7 @@ type Route
     | TasksRoute
     | TaskRoute TaskId
     | TaskEditRoute TaskId
+    | TaskAddRoute
     | NotFoundRoute
 
 
@@ -83,6 +85,9 @@ routeToString route =
         TaskRoute id ->
             "#tasks/" ++ (toString id)
 
+        TaskAddRoute ->
+            "#tasks/add"
+
         TaskEditRoute id ->
             "#tasks/" ++ (toString id) ++ "/edit"
 
@@ -94,6 +99,7 @@ matchers : UrlParser.Parser (Route -> a) a
 matchers =
     UrlParser.oneOf
         [ UrlParser.map HomeRoute UrlParser.top
+        , UrlParser.map TaskAddRoute (UrlParser.s "tasks" </> UrlParser.s "add")
         , UrlParser.map TaskEditRoute (UrlParser.s "tasks" </> UrlParser.int </> UrlParser.s "edit")
         , UrlParser.map TaskRoute (UrlParser.s "tasks" </> UrlParser.int)
         , UrlParser.map TasksRoute (UrlParser.s "tasks")
@@ -110,9 +116,19 @@ parseLocation location =
             NotFoundRoute
 
 
+emptyTask : Task
+emptyTask =
+    { id = 0, title = "", tags = [], freq = Daily }
+
+
 initModel : Route -> Model
 initModel route =
-    { tasks = [], route = route, savePending = False, saveSuccess = Nothing }
+    { tasks = []
+    , route = route
+    , savePending = False
+    , saveSuccess = Nothing
+    , addTask = emptyTask
+    }
 
 
 freqOfString : String -> Result String Frequency
@@ -154,20 +170,35 @@ fetchTasksUrl =
     "http://localhost:4000/tasks"
 
 
+addTaskUrl : String
+addTaskUrl =
+    fetchTasksUrl
+
+
 fetchTasks : Cmd Msg
 fetchTasks =
     Http.get fetchTasksUrl (Json.Decode.list taskDecoder)
         |> Http.send FetchTasksDone
 
 
+commonTaskFields : Task -> List ( String, Json.Encode.Value )
+commonTaskFields task =
+    [ ( "title", Json.Encode.string task.title )
+    , ( "tags", List.map Json.Encode.string task.tags |> Json.Encode.list )
+    , ( "frequency", Json.Encode.string (freqToString task.freq) )
+    ]
+
+
 encodeTask : Task -> Json.Encode.Value
 encodeTask task =
-    Json.Encode.object
-        [ ( "id", Json.Encode.int task.id )
-        , ( "title", Json.Encode.string task.title )
-        , ( "tags", List.map Json.Encode.string task.tags |> Json.Encode.list )
-        , ( "frequency", Json.Encode.string (freqToString task.freq) )
-        ]
+    Json.Encode.object <|
+        ( "id", Json.Encode.int task.id )
+            :: (commonTaskFields task)
+
+
+encodeNewTask : Task -> Json.Encode.Value
+encodeNewTask task =
+    Json.Encode.object (commonTaskFields task)
 
 
 taskDecoder : Json.Decode.Decoder Task
@@ -207,6 +238,11 @@ type Msg
     | EditTaskFrequency TaskId String
     | SaveTask TaskId
     | SaveTaskDone (Result Http.Error Task)
+    | AddTaskTitle String
+    | AddTaskTags String
+    | AddTaskFrequency String
+    | AddTask
+    | AddTaskDone (Result Http.Error Task)
 
 
 saveTask : Task -> Cmd Msg
@@ -221,6 +257,20 @@ saveTask task =
         , withCredentials = False
         }
         |> Http.send SaveTaskDone
+
+
+addTask : Task -> Cmd Msg
+addTask task =
+    Http.request
+        { body = encodeNewTask task |> Http.jsonBody
+        , expect = Http.expectJson taskDecoder
+        , headers = []
+        , method = "POST"
+        , timeout = Nothing
+        , url = addTaskUrl
+        , withCredentials = False
+        }
+        |> Http.send AddTaskDone
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -306,7 +356,6 @@ update msg model =
                         ( model, Cmd.none )
 
         SaveTask taskId ->
-            -- TODO: disable submit button during submit pending
             case findTaskById taskId model.tasks of
                 Just task ->
                     ( { model | savePending = True, saveSuccess = Nothing }
@@ -331,6 +380,62 @@ update msg model =
             -- TODO: only fetch the required task?
             ( { model | savePending = False, saveSuccess = Just False }
             , fetchTasks
+            )
+
+        AddTaskTitle title ->
+            let
+                addTask =
+                    model.addTask
+            in
+                ( { model | addTask = { addTask | title = title } }, Cmd.none )
+
+        AddTaskTags newTagsStr ->
+            let
+                newTags =
+                    String.split "," newTagsStr
+                        |> List.map String.trim
+
+                addTask =
+                    model.addTask
+            in
+                ( { model | addTask = { addTask | tags = newTags } }, Cmd.none )
+
+        AddTaskFrequency frequencyStr ->
+            case freqOfString frequencyStr of
+                Ok freq ->
+                    let
+                        addTask =
+                            model.addTask
+                    in
+                        ( { model | addTask = { addTask | freq = freq } }, Cmd.none )
+
+                Err str ->
+                    -- TODO: real error handling
+                    let
+                        _ =
+                            Debug.log str
+                    in
+                        ( model, Cmd.none )
+
+        AddTask ->
+            ( { model | savePending = True, saveSuccess = Nothing }
+            , addTask model.addTask
+            )
+
+        AddTaskDone (Ok task) ->
+            ( { model
+                | tasks = task :: model.tasks
+                , addTask = emptyTask
+                , savePending = False
+                , saveSuccess = Just True
+              }
+            , Cmd.none
+            )
+
+        AddTaskDone (Err error) ->
+            -- TODO: real error handling
+            ( { model | savePending = False, saveSuccess = Just False }
+            , Cmd.none
             )
 
 
@@ -367,6 +472,7 @@ myNavbar currentRoute =
                     []
                     [ navLink currentRoute HomeRoute "Home"
                     , navLink currentRoute TasksRoute "List Tasks"
+                    , navLink currentRoute TaskAddRoute "Add Task"
                     ]
                 ]
             ]
@@ -410,8 +516,8 @@ viewTasks tasks =
         ]
 
 
-frequencySelect : TaskId -> Frequency -> Html Msg
-frequencySelect taskId selectedFrequency =
+frequencySelect : Frequency -> (String -> Msg) -> Html Msg
+frequencySelect selectedFrequency msg =
     let
         opt frequency =
             let
@@ -424,7 +530,7 @@ frequencySelect taskId selectedFrequency =
                 option attrs [ text (freqToString frequency) ]
     in
         List.map opt [ Daily, Weekly, Monthly ]
-            |> select [ class "form-control", onInput (EditTaskFrequency taskId) ]
+            |> select [ class "form-control", onInput msg ]
 
 
 saveTaskAlert : Maybe Bool -> Html Msg
@@ -450,6 +556,51 @@ saveTaskAlert saveSuccess =
 maxInputLength : Int
 maxInputLength =
     256
+
+
+addTaskForm : Task -> Bool -> Maybe Bool -> Html Msg
+addTaskForm task savePending saveSuccess =
+    container
+        [ row [ saveTaskAlert saveSuccess ]
+        , row
+            [ Bootstrap.Forms.form
+                FormDefault
+                [ onSubmit AddTask ]
+                [ formGroup FormGroupDefault
+                    [ formLabel [ for "taskTitle" ] [ text "Title" ]
+                    , formInput
+                        [ id "taskTitle"
+                        , value task.title
+                        , maxlength maxInputLength
+                        , onInput AddTaskTitle
+                        ]
+                        []
+                    ]
+                , formGroup FormGroupDefault
+                    [ formLabel [ for "taskTags" ] [ text "Tags" ]
+                    , formInput
+                        [ id "taskTags"
+                        , value (String.join ", " task.tags)
+                        , maxlength maxInputLength
+                        , onInput AddTaskTags
+                        ]
+                        []
+                    ]
+                , formGroup FormGroupDefault
+                    [ formLabel [ for "taskFrequency" ] [ text "Frequency" ]
+                    , frequencySelect task.freq AddTaskFrequency
+                    ]
+                , if savePending then
+                    btn BtnDefault
+                        []
+                        []
+                        [ type_ "submit", disabled True ]
+                        [ text "Save Task ", i [ class "fa fa-spinner fa-spin" ] [] ]
+                  else
+                    btn BtnDefault [] [] [ type_ "submit" ] [ text "Save Task" ]
+                ]
+            ]
+        ]
 
 
 editTaskForm : Task -> Bool -> Maybe Bool -> Html Msg
@@ -482,7 +633,7 @@ editTaskForm task savePending saveSuccess =
                     ]
                 , formGroup FormGroupDefault
                     [ formLabel [ for "taskFrequency" ] [ text "Frequency" ]
-                    , frequencySelect task.id task.freq
+                    , frequencySelect task.freq (EditTaskFrequency task.id)
                     ]
                 , if savePending then
                     btn BtnDefault
@@ -509,6 +660,9 @@ page model =
 
         TaskRoute taskId ->
             div [] []
+
+        TaskAddRoute ->
+            addTaskForm model.addTask model.savePending model.saveSuccess
 
         TaskEditRoute taskId ->
             case findTaskById taskId model.tasks of
