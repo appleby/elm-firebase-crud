@@ -55,13 +55,27 @@ type alias Model =
     , route : Route
     , savePending : Bool
     , saveSuccess : Maybe Bool
-    , addTask : Task
+    , pendingTask : Task
     }
 
 
-resetPageState : Model -> Model
-resetPageState model =
-    { model | addTask = emptyTask, savePending = False, saveSuccess = Nothing }
+resetPageState : Model -> Route -> Model
+resetPageState model newRoute =
+    let
+        pending =
+            case newRoute of
+                TaskEditRoute taskId ->
+                    findTaskById taskId model.tasks
+                        |> Maybe.withDefault emptyTask
+
+                _ ->
+                    emptyTask
+    in
+        { model
+            | pendingTask = pending
+            , savePending = False
+            , saveSuccess = Nothing
+        }
 
 
 type Route
@@ -127,7 +141,7 @@ initModel route =
     , route = route
     , savePending = False
     , saveSuccess = Nothing
-    , addTask = emptyTask
+    , pendingTask = emptyTask
     }
 
 
@@ -233,14 +247,11 @@ type Msg
     = OnLocationChange Location
     | Goto Route
     | FetchTasksDone (Result Http.Error (List Task))
-    | EditTaskTitle TaskId String
-    | EditTaskTags TaskId String
-    | EditTaskFrequency TaskId String
-    | SaveTask TaskId
+    | EditTaskTitle String
+    | EditTaskTags String
+    | EditTaskFrequency String
+    | SaveTask
     | SaveTaskDone (Result Http.Error Task)
-    | AddTaskTitle String
-    | AddTaskTags String
-    | AddTaskFrequency String
     | AddTask
     | AddTaskDone (Result Http.Error Task)
 
@@ -285,7 +296,7 @@ update msg model =
                     parseLocation location
 
                 resetModel =
-                    resetPageState model
+                    resetPageState model newRoute
             in
                 ( { resetModel | route = newRoute }, Cmd.none )
 
@@ -299,133 +310,85 @@ update msg model =
             in
                 ( model, Cmd.none )
 
-        EditTaskTitle taskId newTitle ->
+        EditTaskTitle title ->
             let
-                newTasks =
-                    List.map
-                        (\t ->
-                            if t.id == taskId then
-                                { t | title = newTitle }
-                            else
-                                t
-                        )
-                        model.tasks
+                pending =
+                    model.pendingTask
             in
-                ( { model | tasks = newTasks }, Cmd.none )
+                ( { model | pendingTask = { pending | title = title } }, Cmd.none )
 
-        EditTaskTags taskId newTagsStr ->
+        EditTaskTags newTagsStr ->
             let
                 newTags =
                     String.split "," newTagsStr
                         |> List.map String.trim
 
-                newTasks =
-                    List.map
-                        (\t ->
-                            if t.id == taskId then
-                                { t | tags = newTags }
-                            else
-                                t
-                        )
-                        model.tasks
+                pending =
+                    model.pendingTask
             in
-                ( { model | tasks = newTasks }, Cmd.none )
+                ( { model | pendingTask = { pending | tags = newTags } }, Cmd.none )
 
-        EditTaskFrequency taskId newFrequencyStr ->
-            case freqOfString newFrequencyStr of
-                Ok newFrequency ->
-                    let
-                        newTasks =
-                            List.map
-                                (\t ->
-                                    if t.id == taskId then
-                                        { t | freq = newFrequency }
-                                    else
-                                        t
-                                )
-                                model.tasks
-                    in
-                        ( { model | tasks = newTasks }, Cmd.none )
-
-                Err str ->
-                    -- TODO: real error handling
-                    let
-                        _ =
-                            Debug.log str
-                    in
-                        ( model, Cmd.none )
-
-        SaveTask taskId ->
-            case findTaskById taskId model.tasks of
-                Just task ->
-                    ( { model | savePending = True, saveSuccess = Nothing }
-                    , saveTask task
-                    )
-
-                Nothing ->
-                    -- TODO: real error handling
-                    let
-                        _ =
-                            Debug.log <| "SaveTask: invalid taskId " ++ (toString taskId)
-                    in
-                        ( model, Cmd.none )
-
-        SaveTaskDone (Ok _) ->
-            ( { model | savePending = False, saveSuccess = Just True }
-            , Cmd.none
-            )
-
-        SaveTaskDone (Err error) ->
-            -- TODO: real error handling
-            -- TODO: only fetch the required task?
-            ( { model | savePending = False, saveSuccess = Just False }
-            , fetchTasks
-            )
-
-        AddTaskTitle title ->
-            let
-                addTask =
-                    model.addTask
-            in
-                ( { model | addTask = { addTask | title = title } }, Cmd.none )
-
-        AddTaskTags newTagsStr ->
-            let
-                newTags =
-                    String.split "," newTagsStr
-                        |> List.map String.trim
-
-                addTask =
-                    model.addTask
-            in
-                ( { model | addTask = { addTask | tags = newTags } }, Cmd.none )
-
-        AddTaskFrequency frequencyStr ->
+        EditTaskFrequency frequencyStr ->
             case freqOfString frequencyStr of
                 Ok freq ->
                     let
-                        addTask =
-                            model.addTask
+                        pending =
+                            model.pendingTask
                     in
-                        ( { model | addTask = { addTask | freq = freq } }, Cmd.none )
+                        ( { model | pendingTask = { pending | freq = freq } }, Cmd.none )
 
                 Err str ->
                     -- TODO: real error handling
                     let
                         _ =
-                            Debug.log str
+                            Debug.log "unable to convert frequency" str
                     in
                         ( model, Cmd.none )
 
+        SaveTask ->
+            ( { model | savePending = True, saveSuccess = Nothing }
+            , saveTask model.pendingTask
+            )
+
+        SaveTaskDone (Ok savedTask) ->
+            let
+                newTasks =
+                    List.map
+                        (\task ->
+                            if task.id == savedTask.id then
+                                savedTask
+                            else
+                                task
+                        )
+                        model.tasks
+            in
+                ( { model
+                    | tasks = newTasks
+                    , savePending = False
+                    , saveSuccess = Just True
+                  }
+                , Cmd.none
+                )
+
+        SaveTaskDone (Err error) ->
+            -- TODO: real error handling
+            let
+                _ =
+                    Debug.log "failed to save task" error
+            in
+                ( { model | savePending = False, saveSuccess = Just False }
+                , Cmd.none
+                )
+
         AddTask ->
             ( { model | savePending = True, saveSuccess = Nothing }
-            , addTask model.addTask
+            , addTask model.pendingTask
             )
 
         AddTaskDone (Ok task) ->
             ( { model
                 | tasks = task :: model.tasks
-                , addTask = emptyTask
+                , pendingTask = emptyTask
                 , savePending = False
                 , saveSuccess = Just True
               }
@@ -434,9 +397,13 @@ update msg model =
 
         AddTaskDone (Err error) ->
             -- TODO: real error handling
-            ( { model | savePending = False, saveSuccess = Just False }
-            , Cmd.none
-            )
+            let
+                _ =
+                    Debug.log "failed to add task" error
+            in
+                ( { model | savePending = False, saveSuccess = Just False }
+                , Cmd.none
+                )
 
 
 navLink : Route -> Route -> String -> Html Msg
@@ -558,21 +525,21 @@ maxInputLength =
     256
 
 
-addTaskForm : Task -> Bool -> Maybe Bool -> Html Msg
-addTaskForm task savePending saveSuccess =
+editTaskForm : Msg -> Task -> Bool -> Maybe Bool -> Html Msg
+editTaskForm submitMsg task savePending saveSuccess =
     container
         [ row [ saveTaskAlert saveSuccess ]
         , row
             [ Bootstrap.Forms.form
                 FormDefault
-                [ onSubmit AddTask ]
+                [ onSubmit submitMsg ]
                 [ formGroup FormGroupDefault
                     [ formLabel [ for "taskTitle" ] [ text "Title" ]
                     , formInput
                         [ id "taskTitle"
                         , value task.title
                         , maxlength maxInputLength
-                        , onInput AddTaskTitle
+                        , onInput EditTaskTitle
                         ]
                         []
                     ]
@@ -582,58 +549,13 @@ addTaskForm task savePending saveSuccess =
                         [ id "taskTags"
                         , value (String.join ", " task.tags)
                         , maxlength maxInputLength
-                        , onInput AddTaskTags
+                        , onInput EditTaskTags
                         ]
                         []
                     ]
                 , formGroup FormGroupDefault
                     [ formLabel [ for "taskFrequency" ] [ text "Frequency" ]
-                    , frequencySelect task.freq AddTaskFrequency
-                    ]
-                , if savePending then
-                    btn BtnDefault
-                        []
-                        []
-                        [ type_ "submit", disabled True ]
-                        [ text "Save Task ", i [ class "fa fa-spinner fa-spin" ] [] ]
-                  else
-                    btn BtnDefault [] [] [ type_ "submit" ] [ text "Save Task" ]
-                ]
-            ]
-        ]
-
-
-editTaskForm : Task -> Bool -> Maybe Bool -> Html Msg
-editTaskForm task savePending saveSuccess =
-    container
-        [ row [ saveTaskAlert saveSuccess ]
-        , row
-            [ Bootstrap.Forms.form
-                FormDefault
-                [ onSubmit (SaveTask task.id) ]
-                [ formGroup FormGroupDefault
-                    [ formLabel [ for "taskTitle" ] [ text "Title" ]
-                    , formInput
-                        [ id "taskTitle"
-                        , value task.title
-                        , maxlength maxInputLength
-                        , onInput (EditTaskTitle task.id)
-                        ]
-                        []
-                    ]
-                , formGroup FormGroupDefault
-                    [ formLabel [ for "taskTags" ] [ text "Tags" ]
-                    , formInput
-                        [ id "taskTags"
-                        , value (String.join ", " task.tags)
-                        , maxlength maxInputLength
-                        , onInput (EditTaskTags task.id)
-                        ]
-                        []
-                    ]
-                , formGroup FormGroupDefault
-                    [ formLabel [ for "taskFrequency" ] [ text "Frequency" ]
-                    , frequencySelect task.freq (EditTaskFrequency task.id)
+                    , frequencySelect task.freq EditTaskFrequency
                     ]
                 , if savePending then
                     btn BtnDefault
@@ -662,12 +584,12 @@ page model =
             div [] []
 
         TaskAddRoute ->
-            addTaskForm model.addTask model.savePending model.saveSuccess
+            editTaskForm AddTask model.pendingTask model.savePending model.saveSuccess
 
         TaskEditRoute taskId ->
             case findTaskById taskId model.tasks of
-                Just task ->
-                    editTaskForm task model.savePending model.saveSuccess
+                Just _ ->
+                    editTaskForm SaveTask model.pendingTask model.savePending model.saveSuccess
 
                 Nothing ->
                     -- TODO: return real error here
