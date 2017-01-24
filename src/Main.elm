@@ -500,8 +500,8 @@ frequencySelect selectedFrequency msg =
             |> select [ class "form-control", onInput msg ]
 
 
-saveTaskAlert : Maybe Bool -> Html Msg
-saveTaskAlert saveSuccess =
+showAlert : Maybe Bool -> Html Msg
+showAlert saveSuccess =
     case saveSuccess of
         Just success ->
             if success then
@@ -525,48 +525,56 @@ maxInputLength =
     256
 
 
-editTaskForm : Msg -> Task -> Bool -> Maybe Bool -> Html Msg
-editTaskForm submitMsg task savePending saveSuccess =
-    container
-        [ row [ saveTaskAlert saveSuccess ]
-        , row
-            [ Bootstrap.Forms.form
-                FormDefault
-                [ onSubmit submitMsg ]
-                [ formGroup FormGroupDefault
-                    [ formLabel [ for "taskTitle" ] [ text "Title" ]
-                    , formInput
-                        [ id "taskTitle"
-                        , value task.title
-                        , maxlength maxInputLength
-                        , onInput EditTaskTitle
-                        ]
-                        []
-                    ]
-                , formGroup FormGroupDefault
-                    [ formLabel [ for "taskTags" ] [ text "Tags" ]
-                    , formInput
-                        [ id "taskTags"
-                        , value (String.join ", " task.tags)
-                        , maxlength maxInputLength
-                        , onInput EditTaskTags
-                        ]
-                        []
-                    ]
-                , formGroup FormGroupDefault
-                    [ formLabel [ for "taskFrequency" ] [ text "Frequency" ]
-                    , frequencySelect task.freq EditTaskFrequency
-                    ]
-                , if savePending then
-                    btn BtnDefault
-                        []
-                        []
-                        [ type_ "submit", disabled True ]
-                        [ text "Save Task ", i [ class "fa fa-spinner fa-spin" ] [] ]
-                  else
-                    btn BtnDefault [] [] [ type_ "submit" ] [ text "Save Task" ]
+editTaskForm : Msg -> Task -> Bool -> Html Msg
+editTaskForm submitMsg task savePending =
+    Bootstrap.Forms.form
+        FormDefault
+        [ onSubmit submitMsg ]
+        [ formGroup FormGroupDefault
+            [ formLabel [ for "taskTitle" ] [ text "Title" ]
+            , formInput
+                [ id "taskTitle"
+                , value task.title
+                , maxlength maxInputLength
+                , onInput EditTaskTitle
                 ]
+                []
             ]
+        , formGroup FormGroupDefault
+            [ formLabel [ for "taskTags" ] [ text "Tags" ]
+            , formInput
+                [ id "taskTags"
+                , value (String.join ", " task.tags)
+                , maxlength maxInputLength
+                , onInput EditTaskTags
+                ]
+                []
+            ]
+        , formGroup FormGroupDefault
+            [ formLabel [ for "taskFrequency" ] [ text "Frequency" ]
+            , frequencySelect task.freq EditTaskFrequency
+            ]
+        , if savePending then
+            btn BtnDefault
+                []
+                []
+                [ type_ "submit", disabled True ]
+                [ text "Save Task ", i [ class "fa fa-spinner fa-spin" ] [] ]
+          else
+            btn BtnDefault [] [] [ type_ "submit" ] [ text "Save Task" ]
+        ]
+
+
+emptyDiv : Html Msg
+emptyDiv =
+    div [] []
+
+
+containerWithAlerts : Maybe Bool -> Html Msg -> Html Msg
+containerWithAlerts saveSuccess contents =
+    container
+        [ row [ showAlert saveSuccess ]
+        , row [ contents ]
         ]
 
 
@@ -574,34 +582,34 @@ page : Model -> Html Msg
 page model =
     case model.route of
         HomeRoute ->
-            div [] []
+            emptyDiv
 
         TasksRoute ->
-            container
-                [ row [ viewTasks model.tasks ] ]
+            viewTasks model.tasks
 
         TaskRoute taskId ->
-            div [] []
+            emptyDiv
 
         TaskAddRoute ->
-            editTaskForm AddTask model.pendingTask model.savePending model.saveSuccess
+            editTaskForm AddTask model.pendingTask model.savePending
 
         TaskEditRoute taskId ->
             case findTaskById taskId model.tasks of
                 Just _ ->
-                    editTaskForm SaveTask model.pendingTask model.savePending model.saveSuccess
+                    editTaskForm SaveTask model.pendingTask model.savePending
 
                 Nothing ->
                     -- TODO: return real error here
-                    container [ row [ text <| "Error: No task with id: " ++ (toString taskId) ] ]
+                    text ("Error: No task with id: " ++ (toString taskId))
 
         NotFoundRoute ->
-            div [] []
+            -- TODO: Display 404
+            emptyDiv
 
 
 view : Model -> Html Msg
 view model =
     div []
         [ myNavbar model.route
-        , page model
+        , containerWithAlerts model.saveSuccess (page model)
         ]
