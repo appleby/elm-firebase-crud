@@ -189,6 +189,11 @@ addTaskUrl =
     fetchTasksUrl
 
 
+deleteTaskUrl : TaskId -> String
+deleteTaskUrl =
+    saveTaskUrl
+
+
 fetchTasks : Cmd Msg
 fetchTasks =
     Http.get fetchTasksUrl (Json.Decode.list taskDecoder)
@@ -254,6 +259,8 @@ type Msg
     | SaveTaskDone (Result Http.Error Task)
     | AddTask
     | AddTaskDone (Result Http.Error Task)
+    | DeleteTask Task
+    | DeleteTaskDone (Result Http.Error Task)
 
 
 saveTask : Task -> Cmd Msg
@@ -282,6 +289,20 @@ addTask task =
         , withCredentials = False
         }
         |> Http.send AddTaskDone
+
+
+deleteTask : Task -> Cmd Msg
+deleteTask task =
+    Http.request
+        { body = Http.emptyBody
+        , expect = Http.expectJson <| Json.Decode.succeed task
+        , headers = []
+        , method = "DELETE"
+        , timeout = Nothing
+        , url = deleteTaskUrl task.id
+        , withCredentials = False
+        }
+        |> Http.send DeleteTaskDone
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -405,6 +426,34 @@ update msg model =
                 , Cmd.none
                 )
 
+        DeleteTask task ->
+            ( { model | savePending = True, saveSuccess = Nothing }
+            , deleteTask task
+            )
+
+        DeleteTaskDone (Ok task) ->
+            let
+                newTasks =
+                    List.Extra.remove task model.tasks
+            in
+                ( { model
+                    | tasks = newTasks
+                    , savePending = False
+                    , saveSuccess = Just True
+                  }
+                , Cmd.none
+                )
+
+        DeleteTaskDone (Err error) ->
+            -- TODO: real error handling
+            let
+                _ =
+                    Debug.log "failed to delete task" error
+            in
+                ( { model | savePending = False, saveSuccess = Just False }
+                , Cmd.none
+                )
+
 
 navLink : Route -> Route -> String -> Html Msg
 navLink currentRoute linkTo linkText =
@@ -461,7 +510,11 @@ viewTask task =
                     []
                     [ onClick (Goto <| TaskEditRoute task.id) ]
                     [ text "edit" ]
-                , btn BtnDefault [] [] [] [ text "delete" ]
+                , btn BtnDefault
+                    []
+                    []
+                    [ onClick (DeleteTask task) ]
+                    [ text "delete" ]
                 ]
             ]
         ]
