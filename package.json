@@ -5,9 +5,10 @@
   "main": "index.js",
   "scripts": {
     "api": "cp json-server/init-db.json json-server/db.json && json-server --port 4000 --watch json-server/db.json",
+    "firebase-setup-db": "node firebase-setup/test-db.js",
     "build": "webpack",
     "watch": "webpack --watch",
-    "dev": "webpack-dev-server --port 3000",
+    "serve": "webpack-dev-server --port 3000",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -27,6 +28,8 @@
     "css-loader": "^0.26.1",
     "elm-webpack-loader": "^4.2.0",
     "file-loader": "^0.9.0",
+    "firebase": "^3.6.7",
+    "firebase-admin": "^4.0.6",
     "font-awesome": "^4.7.0",
     "json-server": "^0.9.4",
     "style-loader": "^0.13.1",

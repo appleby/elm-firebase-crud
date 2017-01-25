@@ -1,2 +1,2 @@
-api: npm run api
-client: npm run dev
+testdb: npm run firebase-setup-db
+serve: npm run serve

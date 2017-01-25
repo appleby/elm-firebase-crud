@@ -1,0 +1,32 @@
+{
+    "tasks": [
+        { "title": "Read CLRS",
+          "frequency": "daily",
+          "tags": ["home", "reading", "study"]
+        },
+        { "title": "Review Anki",
+          "frequency": "daily",
+          "tags": ["home", "study"]
+        },
+        { "title": "Work on project",
+          "frequency": "daily",
+          "tags": ["work", "programming"]
+        },
+        { "title": "Fast.ai course",
+          "frequency": "daily",
+          "tags": ["home", "study", "ml", "course"]
+        },
+        { "title": "Paint",
+          "frequency": "weekly",
+          "tags": ["home", "hobby", "art", "painting"]
+        },
+        { "title": "Sumi-e",
+          "frequency": "monthly",
+          "tags": ["home", "hobby", "art", "sumi-e"]
+        },
+        { "title": "Gesture drawing",
+          "frequency": "daily",
+          "tags": ["home", "hobby", "art", "drawing"]
+        }
+    ]
+}
