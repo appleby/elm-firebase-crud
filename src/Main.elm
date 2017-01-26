@@ -89,7 +89,6 @@ type alias Model =
 type Route
     = HomeRoute
     | TasksRoute
-    | TaskRoute TaskId
     | TaskEditRoute TaskId
     | TaskAddRoute
     | NotFoundRoute
@@ -103,9 +102,6 @@ routeToString route =
 
         TasksRoute ->
             "#tasks"
-
-        TaskRoute id ->
-            "#tasks/" ++ id
 
         TaskAddRoute ->
             "#tasks/add"
@@ -147,7 +143,6 @@ matchers =
         [ UrlParser.map HomeRoute UrlParser.top
         , UrlParser.map TaskAddRoute (UrlParser.s "tasks" </> UrlParser.s "add")
         , UrlParser.map TaskEditRoute (UrlParser.s "tasks" </> UrlParser.string </> UrlParser.s "edit")
-        , UrlParser.map TaskRoute (UrlParser.s "tasks" </> UrlParser.string)
         , UrlParser.map TasksRoute (UrlParser.s "tasks")
         ]
 
@@ -543,8 +538,7 @@ viewTask task =
         , td [] [ text (String.join ", " task.tags) ]
         , td []
             [ div [ class "btn-group" ]
-                [ btn BtnDefault [] [] [] [ text "view" ]
-                , btn BtnDefault
+                [ btn BtnDefault
                     []
                     []
                     [ onClick (Goto <| TaskEditRoute task.id) ]
@@ -678,9 +672,6 @@ page model =
 
         TasksRoute ->
             viewTasks model.tasks
-
-        TaskRoute taskId ->
-            emptyDiv
 
         TaskAddRoute ->
             editTaskForm AddTask model.pendingTask model.apiPending
