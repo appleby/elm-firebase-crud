@@ -41,7 +41,7 @@ initModel route =
     { tasks = []
     , route = route
     , apiPending = False
-    , apiResult = Nothing
+    , displayResult = Nothing
     , pendingTask = emptyTask
     }
 
@@ -73,7 +73,7 @@ type alias Task =
     }
 
 
-type alias ApiResult =
+type alias DisplayResult =
     Result String String
 
 
@@ -81,7 +81,7 @@ type alias Model =
     { tasks : List Task
     , route : Route
     , apiPending : Bool
-    , apiResult : Maybe ApiResult
+    , displayResult : Maybe DisplayResult
     , pendingTask : Task
     }
 
@@ -137,7 +137,7 @@ resetPageState model newRoute =
         { model
             | pendingTask = pending
             , apiPending = False
-            , apiResult = Nothing
+            , displayResult = Nothing
         }
 
 
@@ -390,7 +390,7 @@ update msg model =
                         ( model, Cmd.none )
 
         SaveTask ->
-            ( { model | apiPending = True, apiResult = Nothing }
+            ( { model | apiPending = True, displayResult = Nothing }
             , saveTask model.pendingTask
             )
 
@@ -409,7 +409,7 @@ update msg model =
                 ( { model
                     | tasks = newTasks
                     , apiPending = False
-                    , apiResult = Just (Ok "Task saved")
+                    , displayResult = Just (Ok "Task saved")
                   }
                 , Cmd.none
                 )
@@ -422,13 +422,13 @@ update msg model =
             in
                 ( { model
                     | apiPending = False
-                    , apiResult = Just (Err "Failed to save task")
+                    , displayResult = Just (Err "Failed to save task")
                   }
                 , Cmd.none
                 )
 
         AddTask ->
-            ( { model | apiPending = True, apiResult = Nothing }
+            ( { model | apiPending = True, displayResult = Nothing }
             , addTask model.pendingTask
             )
 
@@ -437,7 +437,7 @@ update msg model =
                 | tasks = task :: model.tasks
                 , pendingTask = emptyTask
                 , apiPending = False
-                , apiResult = Just (Ok "Task created")
+                , displayResult = Just (Ok "Task created")
               }
             , Cmd.none
             )
@@ -450,13 +450,13 @@ update msg model =
             in
                 ( { model
                     | apiPending = False
-                    , apiResult = Just (Err "Failed to create task")
+                    , displayResult = Just (Err "Failed to create task")
                   }
                 , Cmd.none
                 )
 
         DeleteTask task ->
-            ( { model | apiPending = True, apiResult = Nothing }
+            ( { model | apiPending = True, displayResult = Nothing }
             , deleteTask task
             )
 
@@ -468,7 +468,7 @@ update msg model =
                 ( { model
                     | tasks = newTasks
                     , apiPending = False
-                    , apiResult = Just (Ok "Task deleted")
+                    , displayResult = Just (Ok "Task deleted")
                   }
                 , Cmd.none
                 )
@@ -481,7 +481,7 @@ update msg model =
             in
                 ( { model
                     | apiPending = False
-                    , apiResult = Just (Err "Failed to delete task")
+                    , displayResult = Just (Err "Failed to delete task")
                   }
                 , Cmd.none
                 )
@@ -585,9 +585,9 @@ frequencySelect selectedFrequency msg =
             |> select [ class "form-control", onInput msg ]
 
 
-showAlert : Maybe ApiResult -> Html Msg
-showAlert apiResult =
-    case apiResult of
+showAlert : Maybe DisplayResult -> Html Msg
+showAlert displayResult =
+    case displayResult of
         Just (Ok msg) ->
             div [ class "alert alert-success" ]
                 [ strong [] [ text "Ok! " ]
@@ -655,10 +655,10 @@ emptyDiv =
     div [] []
 
 
-containerWithAlerts : Maybe ApiResult -> Html Msg -> Html Msg
-containerWithAlerts apiResult contents =
+containerWithAlerts : Maybe DisplayResult -> Html Msg -> Html Msg
+containerWithAlerts displayResult contents =
     container
-        [ row [ showAlert apiResult ]
+        [ row [ showAlert displayResult ]
         , row [ contents ]
         ]
 
@@ -696,5 +696,5 @@ view : Model -> Html Msg
 view model =
     div []
         [ myNavbar model.route
-        , containerWithAlerts model.apiResult (page model)
+        , containerWithAlerts model.displayResult (page model)
         ]
