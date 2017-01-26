@@ -532,8 +532,7 @@ myNavbar currentRoute =
 viewTask : Task -> Html Msg
 viewTask task =
     tr []
-        [ td [] [ text task.id ]
-        , td [] [ text task.title ]
+        [ td [] [ text task.title ]
         , td [] [ text (freqToString task.freq) ]
         , td [] [ text (String.join ", " task.tags) ]
         , td []
@@ -558,8 +557,7 @@ viewTasks tasks =
     table [ class "table" ]
         [ thead []
             [ tr []
-                [ th [] [ text "Id" ]
-                , th [] [ text "Title" ]
+                [ th [] [ text "Title" ]
                 , th [] [ text "Frequency" ]
                 , th [] [ text "Tags" ]
                 , th [] [ text "Action" ]
