@@ -4,7 +4,6 @@
   "description": "Schedules for people who hate schedules.",
   "main": "index.js",
   "scripts": {
-    "api": "cp json-server/init-db.json json-server/db.json && json-server --port 4000 --watch json-server/db.json",
     "firebase-setup-db": "node firebase-setup/test-db.js",
     "build": "webpack",
     "watch": "webpack --watch",
@@ -31,7 +30,6 @@
     "firebase": "^3.6.7",
     "firebase-admin": "^4.0.6",
     "font-awesome": "^4.7.0",
-    "json-server": "^0.9.4",
     "style-loader": "^0.13.1",
     "url-loader": "^0.5.7",
     "webpack": "^1.14.0",
