@@ -41,7 +41,7 @@ initModel route =
     { tasks = []
     , route = route
     , apiPending = False
-    , apiSuccess = Nothing
+    , apiResult = Nothing
     , pendingTask = emptyTask
     }
 
@@ -73,11 +73,15 @@ type alias Task =
     }
 
 
+type alias ApiResult =
+    Result String String
+
+
 type alias Model =
     { tasks : List Task
     , route : Route
     , apiPending : Bool
-    , apiSuccess : Maybe Bool
+    , apiResult : Maybe ApiResult
     , pendingTask : Task
     }
 
@@ -133,7 +137,7 @@ resetPageState model newRoute =
         { model
             | pendingTask = pending
             , apiPending = False
-            , apiSuccess = Nothing
+            , apiResult = Nothing
         }
 
 
@@ -381,7 +385,7 @@ update msg model =
                         ( model, Cmd.none )
 
         SaveTask ->
-            ( { model | apiPending = True, apiSuccess = Nothing }
+            ( { model | apiPending = True, apiResult = Nothing }
             , saveTask model.pendingTask
             )
 
@@ -400,7 +404,7 @@ update msg model =
                 ( { model
                     | tasks = newTasks
                     , apiPending = False
-                    , apiSuccess = Just True
+                    , apiResult = Just (Ok "Task saved")
                   }
                 , Cmd.none
                 )
@@ -411,12 +415,15 @@ update msg model =
                 _ =
                     Debug.log "failed to save task" error
             in
-                ( { model | apiPending = False, apiSuccess = Just False }
+                ( { model
+                    | apiPending = False
+                    , apiResult = Just (Err "Failed to save task")
+                  }
                 , Cmd.none
                 )
 
         AddTask ->
-            ( { model | apiPending = True, apiSuccess = Nothing }
+            ( { model | apiPending = True, apiResult = Nothing }
             , addTask model.pendingTask
             )
 
@@ -425,7 +432,7 @@ update msg model =
                 | tasks = task :: model.tasks
                 , pendingTask = emptyTask
                 , apiPending = False
-                , apiSuccess = Just True
+                , apiResult = Just (Ok "Task created")
               }
             , Cmd.none
             )
@@ -434,14 +441,17 @@ update msg model =
             -- TODO: real error handling
             let
                 _ =
-                    Debug.log "failed to add task" error
+                    Debug.log "failed to create task" error
             in
-                ( { model | apiPending = False, apiSuccess = Just False }
+                ( { model
+                    | apiPending = False
+                    , apiResult = Just (Err "Failed to create task")
+                  }
                 , Cmd.none
                 )
 
         DeleteTask task ->
-            ( { model | apiPending = True, apiSuccess = Nothing }
+            ( { model | apiPending = True, apiResult = Nothing }
             , deleteTask task
             )
 
@@ -453,7 +463,7 @@ update msg model =
                 ( { model
                     | tasks = newTasks
                     , apiPending = False
-                    , apiSuccess = Just True
+                    , apiResult = Just (Ok "Task deleted")
                   }
                 , Cmd.none
                 )
@@ -464,7 +474,10 @@ update msg model =
                 _ =
                     Debug.log "failed to delete task" error
             in
-                ( { model | apiPending = False, apiSuccess = Just False }
+                ( { model
+                    | apiPending = False
+                    , apiResult = Just (Err "Failed to delete task")
+                  }
                 , Cmd.none
                 )
 
@@ -567,21 +580,21 @@ frequencySelect selectedFrequency msg =
             |> select [ class "form-control", onInput msg ]
 
 
-showAlert : Maybe Bool -> Html Msg
-showAlert apiSuccess =
-    case apiSuccess of
-        Just success ->
-            if success then
-                div [ class "alert alert-success" ]
-                    [ strong [] [ text "Ok! " ]
-                    , text "Task saved"
-                    ]
-            else
-                -- TODO: dispaly error?
-                div [ class "alert alert-danger" ]
-                    [ strong [] [ text "Error! " ]
-                    , text "Failed to save task!"
-                    ]
+showAlert : Maybe ApiResult -> Html Msg
+showAlert apiResult =
+    case apiResult of
+        Just (Ok msg) ->
+            div [ class "alert alert-success" ]
+                [ strong [] [ text "Ok! " ]
+                , text msg
+                ]
+
+        Just (Err msg) ->
+            -- TODO: dispaly actual error?
+            div [ class "alert alert-danger" ]
+                [ strong [] [ text "Error! " ]
+                , text msg
+                ]
 
         Nothing ->
             div [] []
@@ -637,10 +650,10 @@ emptyDiv =
     div [] []
 
 
-containerWithAlerts : Maybe Bool -> Html Msg -> Html Msg
-containerWithAlerts apiSuccess contents =
+containerWithAlerts : Maybe ApiResult -> Html Msg -> Html Msg
+containerWithAlerts apiResult contents =
     container
-        [ row [ showAlert apiSuccess ]
+        [ row [ showAlert apiResult ]
         , row [ contents ]
         ]
 
@@ -678,5 +691,5 @@ view : Model -> Html Msg
 view model =
     div []
         [ myNavbar model.route
-        , containerWithAlerts model.apiSuccess (page model)
+        , containerWithAlerts model.apiResult (page model)
         ]
