@@ -246,7 +246,7 @@ deleteTask task =
 
 fetchTasks : Cmd Msg
 fetchTasks =
-    Http.get fetchTasksUrl (taskListDecoder)
+    Http.get fetchTasksUrl taskListDecoder
         |> Http.send FetchTasksDone
 
 
