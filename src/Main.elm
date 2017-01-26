@@ -27,6 +27,30 @@ main =
         }
 
 
+init : Location -> ( Model, Cmd Msg )
+init location =
+    let
+        initRoute =
+            parseLocation location
+    in
+        ( initModel initRoute, fetchTasks )
+
+
+initModel : Route -> Model
+initModel route =
+    { tasks = []
+    , route = route
+    , savePending = False
+    , saveSuccess = Nothing
+    , pendingTask = emptyTask
+    }
+
+
+emptyTask : Task
+emptyTask =
+    { id = "", title = "", tags = [], freq = Daily }
+
+
 type Frequency
     = Daily
     | Weekly
@@ -49,11 +73,6 @@ type alias Task =
     }
 
 
-findTaskById : TaskId -> List Task -> Maybe Task
-findTaskById id =
-    List.Extra.find (\t -> t.id == id)
-
-
 type alias Model =
     { tasks : List Task
     , route : Route
@@ -61,25 +80,6 @@ type alias Model =
     , saveSuccess : Maybe Bool
     , pendingTask : Task
     }
-
-
-resetPageState : Model -> Route -> Model
-resetPageState model newRoute =
-    let
-        pending =
-            case newRoute of
-                TaskEditRoute taskId ->
-                    findTaskById taskId model.tasks
-                        |> Maybe.withDefault emptyTask
-
-                _ ->
-                    emptyTask
-    in
-        { model
-            | pendingTask = pending
-            , savePending = False
-            , saveSuccess = Nothing
-        }
 
 
 type Route
@@ -113,6 +113,30 @@ routeToString route =
             "#notfound"
 
 
+findTaskById : TaskId -> List Task -> Maybe Task
+findTaskById id =
+    List.Extra.find (\t -> t.id == id)
+
+
+resetPageState : Model -> Route -> Model
+resetPageState model newRoute =
+    let
+        pending =
+            case newRoute of
+                TaskEditRoute taskId ->
+                    findTaskById taskId model.tasks
+                        |> Maybe.withDefault emptyTask
+
+                _ ->
+                    emptyTask
+    in
+        { model
+            | pendingTask = pending
+            , savePending = False
+            , saveSuccess = Nothing
+        }
+
+
 matchers : UrlParser.Parser (Route -> a) a
 matchers =
     UrlParser.oneOf
@@ -132,21 +156,6 @@ parseLocation location =
 
         Nothing ->
             NotFoundRoute
-
-
-emptyTask : Task
-emptyTask =
-    { id = "", title = "", tags = [], freq = Daily }
-
-
-initModel : Route -> Model
-initModel route =
-    { tasks = []
-    , route = route
-    , savePending = False
-    , saveSuccess = Nothing
-    , pendingTask = emptyTask
-    }
 
 
 freqOfString : String -> Result String Frequency
@@ -253,30 +262,6 @@ freqDecoder str =
             Json.Decode.fail ("unable to decode frequency: " ++ msg)
 
 
-init : Location -> ( Model, Cmd Msg )
-init location =
-    let
-        initRoute =
-            parseLocation location
-    in
-        ( initModel initRoute, fetchTasks )
-
-
-type Msg
-    = OnLocationChange Location
-    | Goto Route
-    | FetchTasksDone (Result Http.Error (List Task))
-    | EditTaskTitle String
-    | EditTaskTags String
-    | EditTaskFrequency String
-    | SaveTask
-    | SaveTaskDone (Result Http.Error Task)
-    | AddTask
-    | AddTaskDone (Result Http.Error Task)
-    | DeleteTask Task
-    | DeleteTaskDone (Result Http.Error Task)
-
-
 saveTask : Task -> Cmd Msg
 saveTask task =
     Http.request
@@ -317,6 +302,21 @@ deleteTask task =
         , withCredentials = False
         }
         |> Http.send DeleteTaskDone
+
+
+type Msg
+    = OnLocationChange Location
+    | Goto Route
+    | FetchTasksDone (Result Http.Error (List Task))
+    | EditTaskTitle String
+    | EditTaskTags String
+    | EditTaskFrequency String
+    | SaveTask
+    | SaveTaskDone (Result Http.Error Task)
+    | AddTask
+    | AddTaskDone (Result Http.Error Task)
+    | DeleteTask Task
+    | DeleteTaskDone (Result Http.Error Task)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
