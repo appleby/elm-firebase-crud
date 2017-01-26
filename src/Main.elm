@@ -350,7 +350,7 @@ update msg model =
         FetchTasksDone (Err error) ->
             let
                 _ =
-                    Debug.log "Fetch error" error
+                    Debug.log "failed to fetch tasks" error
             in
                 ( model, Cmd.none )
 
