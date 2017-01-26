@@ -259,6 +259,11 @@ saveTask task =
         |> Http.send SaveTaskDone
 
 
+goto : Route -> Cmd Msg
+goto route =
+    Navigation.newUrl (routeToString route)
+
+
 encodeTask : Task -> Json.Encode.Value
 encodeTask task =
     Json.Encode.object
@@ -331,7 +336,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Goto newRoute ->
-            ( model, Navigation.newUrl (routeToString newRoute) )
+            ( model, goto newRoute )
 
         OnLocationChange location ->
             let
