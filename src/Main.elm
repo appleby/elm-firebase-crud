@@ -191,30 +191,77 @@ freqToString freq =
             "monthly"
 
 
-saveTaskUrl : TaskId -> String
-saveTaskUrl id =
-    "https://timeslots-61887.firebaseio.com/test/tasks/" ++ id ++ ".json"
-
-
-fetchTasksUrl : String
-fetchTasksUrl =
-    "https://timeslots-61887.firebaseio.com/test/tasks.json"
+dbUrl : String
+dbUrl =
+    "https://timeslots-61887.firebaseio.com/test/"
 
 
 addTaskUrl : String
 addTaskUrl =
-    fetchTasksUrl
+    dbUrl ++ "tasks.json"
 
 
 deleteTaskUrl : TaskId -> String
-deleteTaskUrl =
-    saveTaskUrl
+deleteTaskUrl id =
+    dbUrl ++ "tasks/" ++ id ++ ".json"
+
+
+fetchTasksUrl : String
+fetchTasksUrl =
+    addTaskUrl
+
+
+saveTaskUrl : TaskId -> String
+saveTaskUrl =
+    deleteTaskUrl
+
+
+addTask : Task -> Cmd Msg
+addTask task =
+    Http.request
+        { body = encodeTask task |> Http.jsonBody
+        , expect = Http.expectJson (addResponseDecoder task)
+        , headers = []
+        , method = "POST"
+        , timeout = Nothing
+        , url = addTaskUrl
+        , withCredentials = False
+        }
+        |> Http.send AddTaskDone
+
+
+deleteTask : Task -> Cmd Msg
+deleteTask task =
+    Http.request
+        { body = Http.emptyBody
+        , expect = Http.expectJson <| Json.Decode.succeed task
+        , headers = []
+        , method = "DELETE"
+        , timeout = Nothing
+        , url = deleteTaskUrl task.id
+        , withCredentials = False
+        }
+        |> Http.send DeleteTaskDone
 
 
 fetchTasks : Cmd Msg
 fetchTasks =
     Http.get fetchTasksUrl (taskListDecoder)
         |> Http.send FetchTasksDone
+
+
+saveTask : Task -> Cmd Msg
+saveTask task =
+    Http.request
+        { body = encodeTask task |> Http.jsonBody
+        , expect = Http.expectJson taskDecoder
+        , headers = []
+        , method = "PUT"
+        , timeout = Nothing
+        , url = saveTaskUrl task.id
+        , withCredentials = False
+        }
+        |> Http.send SaveTaskDone
 
 
 encodeTask : Task -> Json.Encode.Value
@@ -264,48 +311,6 @@ freqDecoder str =
 
         Err msg ->
             Json.Decode.fail ("unable to decode frequency: " ++ msg)
-
-
-saveTask : Task -> Cmd Msg
-saveTask task =
-    Http.request
-        { body = encodeTask task |> Http.jsonBody
-        , expect = Http.expectJson taskDecoder
-        , headers = []
-        , method = "PUT"
-        , timeout = Nothing
-        , url = saveTaskUrl task.id
-        , withCredentials = False
-        }
-        |> Http.send SaveTaskDone
-
-
-addTask : Task -> Cmd Msg
-addTask task =
-    Http.request
-        { body = encodeTask task |> Http.jsonBody
-        , expect = Http.expectJson (addResponseDecoder task)
-        , headers = []
-        , method = "POST"
-        , timeout = Nothing
-        , url = addTaskUrl
-        , withCredentials = False
-        }
-        |> Http.send AddTaskDone
-
-
-deleteTask : Task -> Cmd Msg
-deleteTask task =
-    Http.request
-        { body = Http.emptyBody
-        , expect = Http.expectJson <| Json.Decode.succeed task
-        , headers = []
-        , method = "DELETE"
-        , timeout = Nothing
-        , url = deleteTaskUrl task.id
-        , withCredentials = False
-        }
-        |> Http.send DeleteTaskDone
 
 
 type Msg
