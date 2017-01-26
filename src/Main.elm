@@ -34,7 +34,11 @@ type Frequency
 
 
 type alias TaskId =
-    Int
+    String
+
+
+type alias PostResponse =
+    { name : TaskId }
 
 
 type alias Task =
@@ -97,13 +101,13 @@ routeToString route =
             "#tasks"
 
         TaskRoute id ->
-            "#tasks/" ++ (toString id)
+            "#tasks/" ++ id
 
         TaskAddRoute ->
             "#tasks/add"
 
         TaskEditRoute id ->
-            "#tasks/" ++ (toString id) ++ "/edit"
+            "#tasks/" ++ id ++ "/edit"
 
         NotFoundRoute ->
             "#notfound"
@@ -114,8 +118,8 @@ matchers =
     UrlParser.oneOf
         [ UrlParser.map HomeRoute UrlParser.top
         , UrlParser.map TaskAddRoute (UrlParser.s "tasks" </> UrlParser.s "add")
-        , UrlParser.map TaskEditRoute (UrlParser.s "tasks" </> UrlParser.int </> UrlParser.s "edit")
-        , UrlParser.map TaskRoute (UrlParser.s "tasks" </> UrlParser.int)
+        , UrlParser.map TaskEditRoute (UrlParser.s "tasks" </> UrlParser.string </> UrlParser.s "edit")
+        , UrlParser.map TaskRoute (UrlParser.s "tasks" </> UrlParser.string)
         , UrlParser.map TasksRoute (UrlParser.s "tasks")
         ]
 
@@ -132,7 +136,7 @@ parseLocation location =
 
 emptyTask : Task
 emptyTask =
-    { id = 0, title = "", tags = [], freq = Daily }
+    { id = "", title = "", tags = [], freq = Daily }
 
 
 initModel : Route -> Model
@@ -176,12 +180,12 @@ freqToString freq =
 
 saveTaskUrl : TaskId -> String
 saveTaskUrl id =
-    "http://localhost:4000/tasks/" ++ (toString id)
+    "https://timeslots-61887.firebaseio.com/test/tasks/" ++ id ++ ".json"
 
 
 fetchTasksUrl : String
 fetchTasksUrl =
-    "http://localhost:4000/tasks"
+    "https://timeslots-61887.firebaseio.com/test/tasks.json"
 
 
 addTaskUrl : String
@@ -196,37 +200,47 @@ deleteTaskUrl =
 
 fetchTasks : Cmd Msg
 fetchTasks =
-    Http.get fetchTasksUrl (Json.Decode.list taskDecoder)
+    Http.get fetchTasksUrl (taskListDecoder)
         |> Http.send FetchTasksDone
-
-
-commonTaskFields : Task -> List ( String, Json.Encode.Value )
-commonTaskFields task =
-    [ ( "title", Json.Encode.string task.title )
-    , ( "tags", List.map Json.Encode.string task.tags |> Json.Encode.list )
-    , ( "frequency", Json.Encode.string (freqToString task.freq) )
-    ]
 
 
 encodeTask : Task -> Json.Encode.Value
 encodeTask task =
-    Json.Encode.object <|
-        ( "id", Json.Encode.int task.id )
-            :: (commonTaskFields task)
+    Json.Encode.object
+        [ ( "title", Json.Encode.string task.title )
+        , ( "tags", List.map Json.Encode.string task.tags |> Json.Encode.list )
+        , ( "frequency", Json.Encode.string (freqToString task.freq) )
+        ]
 
 
-encodeNewTask : Task -> Json.Encode.Value
-encodeNewTask task =
-    Json.Encode.object (commonTaskFields task)
+taskListDecoder : Json.Decode.Decoder (List Task)
+taskListDecoder =
+    Json.Decode.keyValuePairs taskDecoder
+        |> Json.Decode.andThen
+            (Json.Decode.succeed
+                << List.map (\( id, task ) -> { task | id = id })
+            )
 
 
 taskDecoder : Json.Decode.Decoder Task
 taskDecoder =
     Json.Decode.map4 Task
-        (Json.Decode.field "id" Json.Decode.int)
+        (Json.Decode.succeed "")
         (Json.Decode.field "title" Json.Decode.string)
         (Json.Decode.field "tags" (Json.Decode.list Json.Decode.string))
         (Json.Decode.field "frequency" Json.Decode.string |> Json.Decode.andThen freqDecoder)
+
+
+postResponseDecoder : Json.Decode.Decoder PostResponse
+postResponseDecoder =
+    Json.Decode.map PostResponse (Json.Decode.field "name" Json.Decode.string)
+
+
+addResponseDecoder : Task -> Json.Decode.Decoder Task
+addResponseDecoder task =
+    postResponseDecoder
+        |> Json.Decode.andThen
+            (\pr -> Json.Decode.succeed { task | id = pr.name })
 
 
 freqDecoder : String -> Json.Decode.Decoder Frequency
@@ -269,7 +283,7 @@ saveTask task =
         { body = encodeTask task |> Http.jsonBody
         , expect = Http.expectJson taskDecoder
         , headers = []
-        , method = "PATCH"
+        , method = "PUT"
         , timeout = Nothing
         , url = saveTaskUrl task.id
         , withCredentials = False
@@ -280,8 +294,8 @@ saveTask task =
 addTask : Task -> Cmd Msg
 addTask task =
     Http.request
-        { body = encodeNewTask task |> Http.jsonBody
-        , expect = Http.expectJson taskDecoder
+        { body = encodeTask task |> Http.jsonBody
+        , expect = Http.expectJson (addResponseDecoder task)
         , headers = []
         , method = "POST"
         , timeout = Nothing
@@ -498,7 +512,7 @@ myNavbar currentRoute =
 viewTask : Task -> Html Msg
 viewTask task =
     tr []
-        [ td [] [ text (toString task.id) ]
+        [ td [] [ text task.id ]
         , td [] [ text task.title ]
         , td [] [ text (freqToString task.freq) ]
         , td [] [ text (String.join ", " task.tags) ]
@@ -653,7 +667,7 @@ page model =
 
                 Nothing ->
                     -- TODO: return real error here
-                    text ("Error: No task with id: " ++ (toString taskId))
+                    text ("Error: No task with id: " ++ taskId)
 
         NotFoundRoute ->
             -- TODO: Display 404
