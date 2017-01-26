@@ -389,7 +389,7 @@ update msg model =
                         ( model, Cmd.none )
 
         SaveTask ->
-            ( { model | apiPending = True, displayResult = Nothing }
+            ( updateModelForApiRequest model
             , saveTask model.pendingTask
             )
 
@@ -397,7 +397,7 @@ update msg model =
             handleApiTaskResult model Update apiResult
 
         AddTask ->
-            ( { model | apiPending = True, displayResult = Nothing }
+            ( updateModelForApiRequest model
             , addTask model.pendingTask
             )
 
@@ -414,12 +414,17 @@ update msg model =
             handleApiTaskResult model Create apiResult
 
         DeleteTask task ->
-            ( { model | apiPending = True, displayResult = Nothing }
+            ( updateModelForApiRequest model
             , deleteTask task
             )
 
         DeleteTaskDone apiResult ->
             handleApiTaskResult model Delete apiResult
+
+
+updateModelForApiRequest : Model -> Model
+updateModelForApiRequest model =
+    { model | apiPending = True, displayResult = Nothing }
 
 
 type TaskOp
