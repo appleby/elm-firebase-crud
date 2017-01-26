@@ -40,8 +40,8 @@ initModel : Route -> Model
 initModel route =
     { tasks = []
     , route = route
-    , savePending = False
-    , saveSuccess = Nothing
+    , apiPending = False
+    , apiSuccess = Nothing
     , pendingTask = emptyTask
     }
 
@@ -76,8 +76,8 @@ type alias Task =
 type alias Model =
     { tasks : List Task
     , route : Route
-    , savePending : Bool
-    , saveSuccess : Maybe Bool
+    , apiPending : Bool
+    , apiSuccess : Maybe Bool
     , pendingTask : Task
     }
 
@@ -132,8 +132,8 @@ resetPageState model newRoute =
     in
         { model
             | pendingTask = pending
-            , savePending = False
-            , saveSuccess = Nothing
+            , apiPending = False
+            , apiSuccess = Nothing
         }
 
 
@@ -381,7 +381,7 @@ update msg model =
                         ( model, Cmd.none )
 
         SaveTask ->
-            ( { model | savePending = True, saveSuccess = Nothing }
+            ( { model | apiPending = True, apiSuccess = Nothing }
             , saveTask model.pendingTask
             )
 
@@ -399,8 +399,8 @@ update msg model =
             in
                 ( { model
                     | tasks = newTasks
-                    , savePending = False
-                    , saveSuccess = Just True
+                    , apiPending = False
+                    , apiSuccess = Just True
                   }
                 , Cmd.none
                 )
@@ -411,12 +411,12 @@ update msg model =
                 _ =
                     Debug.log "failed to save task" error
             in
-                ( { model | savePending = False, saveSuccess = Just False }
+                ( { model | apiPending = False, apiSuccess = Just False }
                 , Cmd.none
                 )
 
         AddTask ->
-            ( { model | savePending = True, saveSuccess = Nothing }
+            ( { model | apiPending = True, apiSuccess = Nothing }
             , addTask model.pendingTask
             )
 
@@ -424,8 +424,8 @@ update msg model =
             ( { model
                 | tasks = task :: model.tasks
                 , pendingTask = emptyTask
-                , savePending = False
-                , saveSuccess = Just True
+                , apiPending = False
+                , apiSuccess = Just True
               }
             , Cmd.none
             )
@@ -436,12 +436,12 @@ update msg model =
                 _ =
                     Debug.log "failed to add task" error
             in
-                ( { model | savePending = False, saveSuccess = Just False }
+                ( { model | apiPending = False, apiSuccess = Just False }
                 , Cmd.none
                 )
 
         DeleteTask task ->
-            ( { model | savePending = True, saveSuccess = Nothing }
+            ( { model | apiPending = True, apiSuccess = Nothing }
             , deleteTask task
             )
 
@@ -452,8 +452,8 @@ update msg model =
             in
                 ( { model
                     | tasks = newTasks
-                    , savePending = False
-                    , saveSuccess = Just True
+                    , apiPending = False
+                    , apiSuccess = Just True
                   }
                 , Cmd.none
                 )
@@ -464,7 +464,7 @@ update msg model =
                 _ =
                     Debug.log "failed to delete task" error
             in
-                ( { model | savePending = False, saveSuccess = Just False }
+                ( { model | apiPending = False, apiSuccess = Just False }
                 , Cmd.none
                 )
 
@@ -568,8 +568,8 @@ frequencySelect selectedFrequency msg =
 
 
 showAlert : Maybe Bool -> Html Msg
-showAlert saveSuccess =
-    case saveSuccess of
+showAlert apiSuccess =
+    case apiSuccess of
         Just success ->
             if success then
                 div [ class "alert alert-success" ]
@@ -593,7 +593,7 @@ maxInputLength =
 
 
 editTaskForm : Msg -> Task -> Bool -> Html Msg
-editTaskForm submitMsg task savePending =
+editTaskForm submitMsg task apiPending =
     Bootstrap.Forms.form
         FormDefault
         [ onSubmit submitMsg ]
@@ -621,7 +621,7 @@ editTaskForm submitMsg task savePending =
             [ formLabel [ for "taskFrequency" ] [ text "Frequency" ]
             , frequencySelect task.freq EditTaskFrequency
             ]
-        , if savePending then
+        , if apiPending then
             btn BtnDefault
                 []
                 []
@@ -638,9 +638,9 @@ emptyDiv =
 
 
 containerWithAlerts : Maybe Bool -> Html Msg -> Html Msg
-containerWithAlerts saveSuccess contents =
+containerWithAlerts apiSuccess contents =
     container
-        [ row [ showAlert saveSuccess ]
+        [ row [ showAlert apiSuccess ]
         , row [ contents ]
         ]
 
@@ -658,12 +658,12 @@ page model =
             emptyDiv
 
         TaskAddRoute ->
-            editTaskForm AddTask model.pendingTask model.savePending
+            editTaskForm AddTask model.pendingTask model.apiPending
 
         TaskEditRoute taskId ->
             case findTaskById taskId model.tasks of
                 Just _ ->
-                    editTaskForm SaveTask model.pendingTask model.savePending
+                    editTaskForm SaveTask model.pendingTask model.apiPending
 
                 Nothing ->
                     -- TODO: return real error here
@@ -678,5 +678,5 @@ view : Model -> Html Msg
 view model =
     div []
         [ myNavbar model.route
-        , containerWithAlerts model.saveSuccess (page model)
+        , containerWithAlerts model.apiSuccess (page model)
         ]
