@@ -313,6 +313,10 @@ freqDecoder str =
             Json.Decode.fail ("unable to decode frequency: " ++ msg)
 
 
+type alias ApiTaskResult =
+    Result Http.Error Task
+
+
 type Msg
     = OnLocationChange Location
     | Goto Route
@@ -321,11 +325,11 @@ type Msg
     | EditTaskTags String
     | EditTaskFrequency String
     | SaveTask
-    | SaveTaskDone (Result Http.Error Task)
+    | SaveTaskDone ApiTaskResult
     | AddTask
-    | AddTaskDone (Result Http.Error Task)
+    | AddTaskDone ApiTaskResult
     | DeleteTask Task
-    | DeleteTaskDone (Result Http.Error Task)
+    | DeleteTaskDone ApiTaskResult
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -394,97 +398,100 @@ update msg model =
             , saveTask model.pendingTask
             )
 
-        SaveTaskDone (Ok savedTask) ->
-            let
-                newTasks =
-                    List.map
-                        (\task ->
-                            if task.id == savedTask.id then
-                                savedTask
-                            else
-                                task
-                        )
-                        model.tasks
-            in
-                ( { model
-                    | tasks = newTasks
-                    , apiPending = False
-                    , displayResult = Just (Ok "Task saved")
-                  }
-                , Cmd.none
-                )
-
-        SaveTaskDone (Err error) ->
-            -- TODO: real error handling
-            let
-                _ =
-                    Debug.log "failed to save task" error
-            in
-                ( { model
-                    | apiPending = False
-                    , displayResult = Just (Err "Failed to save task")
-                  }
-                , Cmd.none
-                )
+        SaveTaskDone apiResult ->
+            handleApiTaskResult model Update apiResult
 
         AddTask ->
             ( { model | apiPending = True, displayResult = Nothing }
             , addTask model.pendingTask
             )
 
-        AddTaskDone (Ok task) ->
-            ( { model
-                | tasks = task :: model.tasks
-                , pendingTask = emptyTask
-                , apiPending = False
-                , displayResult = Just (Ok "Task created")
-              }
-            , Cmd.none
-            )
-
-        AddTaskDone (Err error) ->
-            -- TODO: real error handling
+        AddTaskDone ((Ok _) as apiResult) ->
             let
-                _ =
-                    Debug.log "failed to create task" error
+                ( newModel, cmd ) =
+                    handleApiTaskResult model Create apiResult
             in
-                ( { model
-                    | apiPending = False
-                    , displayResult = Just (Err "Failed to create task")
-                  }
-                , Cmd.none
+                ( { newModel | pendingTask = emptyTask }
+                , cmd
                 )
+
+        AddTaskDone ((Err _) as apiResult) ->
+            handleApiTaskResult model Create apiResult
 
         DeleteTask task ->
             ( { model | apiPending = True, displayResult = Nothing }
             , deleteTask task
             )
 
-        DeleteTaskDone (Ok task) ->
-            let
-                newTasks =
-                    List.Extra.remove task model.tasks
-            in
-                ( { model
-                    | tasks = newTasks
-                    , apiPending = False
-                    , displayResult = Just (Ok "Task deleted")
-                  }
-                , Cmd.none
-                )
+        DeleteTaskDone apiResult ->
+            handleApiTaskResult model Delete apiResult
 
-        DeleteTaskDone (Err error) ->
-            -- TODO: real error handling
-            let
-                _ =
-                    Debug.log "failed to delete task" error
-            in
-                ( { model
-                    | apiPending = False
-                    , displayResult = Just (Err "Failed to delete task")
-                  }
-                , Cmd.none
-                )
+
+type TaskOp
+    = Create
+    | Read
+    | Update
+    | Delete
+
+
+taskOpToInfinitive : TaskOp -> String
+taskOpToInfinitive op =
+    case op of
+        Create ->
+            "create"
+
+        Read ->
+            "fetch"
+
+        Update ->
+            "save"
+
+        Delete ->
+            "delete"
+
+
+taskOpToPastTense : TaskOp -> String
+taskOpToPastTense op =
+    case op of
+        Create ->
+            "created"
+
+        Read ->
+            "fetched"
+
+        Update ->
+            "saved"
+
+        Delete ->
+            "deleted"
+
+
+handleApiTaskResult : Model -> TaskOp -> ApiTaskResult -> ( Model, Cmd Msg )
+handleApiTaskResult model op apiResult =
+    let
+        ( displayResult, nextCmd ) =
+            case apiResult of
+                Ok _ ->
+                    ( Just <| Ok <| "Task " ++ (taskOpToPastTense op)
+                    , fetchTasks
+                    )
+
+                Err error ->
+                    let
+                        msg =
+                            "failed to " ++ (taskOpToInfinitive op) ++ " task"
+
+                        _ =
+                            Debug.log msg error
+                    in
+                        ( Just (Err msg), Cmd.none )
+    in
+        ( { model
+            | apiPending = False
+            , displayResult = displayResult
+          }
+        , nextCmd
+        )
 
 
 navLink : Route -> Route -> String -> Html Msg
