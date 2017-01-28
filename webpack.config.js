@@ -27,6 +27,11 @@ module.exports = {
                 loader:  'file?name=[name].[ext]',
             },
             {
+                test: /\.json$/,
+                exclude: /node_modules/,
+                loader: 'json-loader'
+            },
+            {
                 test:    /\.elm$/,
                 exclude: [/elm-stuff/, /node_modules/],
                 loader:  'elm-webpack?verbose=true&warn=true',
