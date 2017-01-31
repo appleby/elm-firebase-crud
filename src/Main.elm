@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Bootstrap.Buttons exposing (..)
 import Bootstrap.Forms exposing (..)
@@ -17,13 +17,28 @@ import String
 import UrlParser exposing ((</>))
 
 
+port signIn : () -> Cmd msg
+
+
+port signOut : () -> Cmd msg
+
+
+port signOutOk : (Bool -> msg) -> Sub msg
+
+
+port signInOk : (UserCred -> msg) -> Sub msg
+
+
+port signInErr : (AuthError -> msg) -> Sub msg
+
+
 main : Program Never Model Msg
 main =
     Navigation.program OnLocationChange
         { init = init
-        , update = update
+        , update = updateWithSignInCheck
         , view = view
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = subscriptions
         }
 
 
@@ -33,7 +48,7 @@ init location =
         initRoute =
             parseLocation location
     in
-        ( initModel initRoute, fetchTasks )
+        ( initModel initRoute, Cmd.none )
 
 
 initModel : Route -> Model
@@ -43,6 +58,8 @@ initModel route =
     , apiPending = False
     , displayResult = Nothing
     , pendingTask = emptyTask
+    , user = Nothing
+    , cred = Nothing
     }
 
 
@@ -83,6 +100,8 @@ type alias Model =
     , apiPending : Bool
     , displayResult : Maybe DisplayResult
     , pendingTask : Task
+    , user : Maybe User
+    , cred : Maybe Credential
     }
 
 
@@ -330,11 +349,107 @@ type Msg
     | AddTaskDone ApiTaskResult
     | DeleteTask Task
     | DeleteTaskDone ApiTaskResult
+    | SignIn
+    | SignInDone (Result AuthError UserCred)
+    | SignOut
+    | SignOutDone Bool
+
+
+authRequired : Msg -> Bool
+authRequired msg =
+    case msg of
+        SignIn ->
+            False
+
+        SignInDone _ ->
+            False
+
+        SignOut ->
+            False
+
+        SignOutDone _ ->
+            False
+
+        Goto HomeRoute ->
+            False
+
+        OnLocationChange location ->
+            case parseLocation location of
+                HomeRoute ->
+                    False
+
+                _ ->
+                    True
+
+        _ ->
+            True
+
+
+signedIn : Maybe User -> Bool
+signedIn maybeUser =
+    -- TODO: Maybe.Extra.isJust from elm-community?
+    case maybeUser of
+        Just _ ->
+            True
+
+        Nothing ->
+            False
+
+
+signedOut : Maybe User -> Bool
+signedOut =
+    -- TODO: Maybe.Extra.isNothing from elm-community?
+    not << signedIn
+
+
+updateWithSignInCheck : Msg -> Model -> ( Model, Cmd Msg )
+updateWithSignInCheck msg model =
+    if signedOut model.user && authRequired msg then
+        ( model, signIn () )
+    else
+        update msg model
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        SignIn ->
+            ( model, signIn () )
+
+        SignInDone (Ok { user, credential }) ->
+            ({ model
+                | user = Just user
+                , cred = Just credential
+             }
+                ! [ fetchTasks, goto TasksRoute ]
+            )
+
+        SignInDone (Err authErr) ->
+            -- TODO: display error
+            ( { model
+                | user = Nothing
+                , cred = Nothing
+                , tasks = []
+              }
+            , goto HomeRoute
+            )
+
+        SignOut ->
+            ( model, signOut () )
+
+        SignOutDone True ->
+            ( { model
+                | user = Nothing
+                , cred = Nothing
+                , tasks = []
+              }
+            , goto HomeRoute
+            )
+
+        SignOutDone False ->
+            -- TODO: display error
+            ( model, Cmd.none )
+
         Goto newRoute ->
             ( model, goto newRoute )
 
@@ -499,6 +614,56 @@ handleApiTaskResult model op apiResult =
         )
 
 
+type alias UserInfo =
+    { displayName : String
+    , email : String
+    , photoURL : String
+    , providerId : String
+    , uid : String
+    }
+
+
+type alias User =
+    { displayName : String
+    , email : String
+    , photoURL : String
+    , providerId : String
+    , uid : String
+    , providerData : List UserInfo
+    , emailVerified : Bool
+    , isAnonymous : Bool
+    , refreshToken : String
+    }
+
+
+type alias Credential =
+    { accessToken : String
+    , idToken : String
+    , provider : String
+    }
+
+
+type alias UserCred =
+    { user : User
+    , credential : Credential
+    }
+
+
+type alias AuthError =
+    { code : Maybe String
+    , message : Maybe String
+    }
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.batch
+        [ signInOk (SignInDone << Ok)
+        , signInErr (SignInDone << Err)
+        , signOutOk SignOutDone
+        ]
+
+
 navLink : Route -> Route -> String -> Html Msg
 navLink currentRoute linkTo linkText =
     let
@@ -511,8 +676,38 @@ navLink currentRoute linkTo linkText =
         li attrs [ a [ href (routeToString linkTo) ] [ text linkText ] ]
 
 
-myNavbar : Route -> Html Msg
-myNavbar currentRoute =
+signInOut : Maybe User -> Html Msg
+signInOut maybeUser =
+    case maybeUser of
+        Just user ->
+            navbarList
+                NavbarNav
+                NavbarRight
+                []
+                [ li [] [ p [ class "navbar-text" ] [ text user.displayName ] ]
+                , li [] [ a [ onClick SignOut ] [ text "Sign Out" ] ]
+                ]
+
+        Nothing ->
+            navbarList
+                NavbarNav
+                NavbarRight
+                []
+                [ li [] [ a [ onClick SignIn ] [ text "Sign In" ] ] ]
+
+
+navLinks : Route -> Maybe User -> List (Html Msg)
+navLinks currentRoute maybeUser =
+    if signedIn maybeUser then
+        [ navLink currentRoute TasksRoute "List Tasks"
+        , navLink currentRoute TaskAddRoute "Add Task"
+        ]
+    else
+        []
+
+
+myNavbar : Route -> Maybe User -> Html Msg
+myNavbar currentRoute maybeUser =
     navbar
         DefaultNavbar
         [ class "navbar-static-top" ]
@@ -530,10 +725,8 @@ myNavbar currentRoute =
                     NavbarNav
                     NavbarDefault
                     []
-                    [ navLink currentRoute HomeRoute "Home"
-                    , navLink currentRoute TasksRoute "List Tasks"
-                    , navLink currentRoute TaskAddRoute "Add Task"
-                    ]
+                    (navLinks currentRoute maybeUser)
+                , signInOut maybeUser
                 ]
             ]
         ]
@@ -701,6 +894,6 @@ page model =
 view : Model -> Html Msg
 view model =
     div []
-        [ myNavbar model.route
+        [ myNavbar model.route model.user
         , containerWithAlerts model.displayResult (page model)
         ]
