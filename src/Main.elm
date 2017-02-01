@@ -210,69 +210,74 @@ dbUrl =
     "https://timeslots-61887.firebaseio.com/test/"
 
 
-addTaskUrl : String
-addTaskUrl =
-    dbUrl ++ "tasks.json"
+uidUrl : UserId -> String
+uidUrl uid =
+    dbUrl ++ uid ++ "/"
 
 
-deleteTaskUrl : TaskId -> String
-deleteTaskUrl id =
-    dbUrl ++ "tasks/" ++ id ++ ".json"
+addTaskUrl : UserId -> String
+addTaskUrl uid =
+    uidUrl uid ++ "tasks.json"
 
 
-fetchTasksUrl : String
+deleteTaskUrl : UserId -> TaskId -> String
+deleteTaskUrl uid tid =
+    uidUrl uid ++ "tasks/" ++ tid ++ ".json"
+
+
+fetchTasksUrl : UserId -> String
 fetchTasksUrl =
     addTaskUrl
 
 
-saveTaskUrl : TaskId -> String
+saveTaskUrl : UserId -> TaskId -> String
 saveTaskUrl =
     deleteTaskUrl
 
 
-addTask : Task -> Cmd Msg
-addTask task =
+addTask : UserId -> Task -> Cmd Msg
+addTask uid task =
     Http.request
         { body = encodeTask task |> Http.jsonBody
         , expect = Http.expectJson (addResponseDecoder task)
         , headers = []
         , method = "POST"
         , timeout = Nothing
-        , url = addTaskUrl
+        , url = addTaskUrl uid
         , withCredentials = False
         }
         |> Http.send AddTaskDone
 
 
-deleteTask : Task -> Cmd Msg
-deleteTask task =
+deleteTask : UserId -> Task -> Cmd Msg
+deleteTask uid task =
     Http.request
         { body = Http.emptyBody
         , expect = Http.expectJson <| Json.Decode.succeed task
         , headers = []
         , method = "DELETE"
         , timeout = Nothing
-        , url = deleteTaskUrl task.id
+        , url = deleteTaskUrl uid task.id
         , withCredentials = False
         }
         |> Http.send DeleteTaskDone
 
 
-fetchTasks : Cmd Msg
-fetchTasks =
-    Http.get fetchTasksUrl taskListDecoder
+fetchTasks : UserId -> Cmd Msg
+fetchTasks uid =
+    Http.get (fetchTasksUrl uid) taskListDecoder
         |> Http.send FetchTasksDone
 
 
-saveTask : Task -> Cmd Msg
-saveTask task =
+saveTask : UserId -> Task -> Cmd Msg
+saveTask uid task =
     Http.request
         { body = encodeTask task |> Http.jsonBody
         , expect = Http.expectJson taskDecoder
         , headers = []
         , method = "PUT"
         , timeout = Nothing
-        , url = saveTaskUrl task.id
+        , url = (saveTaskUrl uid task.id)
         , withCredentials = False
         }
         |> Http.send SaveTaskDone
@@ -402,6 +407,16 @@ signedOut =
     not << signedIn
 
 
+uidOrCrash : Maybe User -> UserId
+uidOrCrash maybeUser =
+    case maybeUser of
+        Just user ->
+            user.uid
+
+        Nothing ->
+            Debug.crash "uidOrCrash: user = Nothing"
+
+
 updateWithSignInCheck : Msg -> Model -> ( Model, Cmd Msg )
 updateWithSignInCheck msg model =
     if signedOut model.user && authRequired msg then
@@ -421,7 +436,7 @@ update msg model =
                 | user = Just user
                 , cred = Just credential
              }
-                ! [ fetchTasks, goto TasksRoute ]
+                ! [ fetchTasks user.uid, goto TasksRoute ]
             )
 
         SignInDone (Err authErr) ->
@@ -510,7 +525,7 @@ update msg model =
 
         SaveTask ->
             ( updateModelForApiRequest model
-            , saveTask model.pendingTask
+            , saveTask (uidOrCrash model.user) model.pendingTask
             )
 
         SaveTaskDone apiResult ->
@@ -518,7 +533,7 @@ update msg model =
 
         AddTask ->
             ( updateModelForApiRequest model
-            , addTask model.pendingTask
+            , addTask (uidOrCrash model.user) model.pendingTask
             )
 
         AddTaskDone ((Ok _) as apiResult) ->
@@ -535,7 +550,7 @@ update msg model =
 
         DeleteTask task ->
             ( updateModelForApiRequest model
-            , deleteTask task
+            , deleteTask (uidOrCrash model.user) task
             )
 
         DeleteTaskDone apiResult ->
@@ -593,7 +608,7 @@ handleApiTaskResult model op apiResult =
             case apiResult of
                 Ok _ ->
                     ( Just <| Ok <| "Task " ++ (taskOpToPastTense op)
-                    , fetchTasks
+                    , fetchTasks (uidOrCrash model.user)
                     )
 
                 Err error ->
@@ -614,12 +629,16 @@ handleApiTaskResult model op apiResult =
         )
 
 
+type alias UserId =
+    String
+
+
 type alias UserInfo =
     { displayName : String
     , email : String
     , photoURL : String
     , providerId : String
-    , uid : String
+    , uid : UserId
     }
 
 
@@ -628,7 +647,7 @@ type alias User =
     , email : String
     , photoURL : String
     , providerId : String
-    , uid : String
+    , uid : UserId
     , providerData : List UserInfo
     , emailVerified : Bool
     , isAnonymous : Bool

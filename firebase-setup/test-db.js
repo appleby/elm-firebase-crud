@@ -3,6 +3,7 @@
 var admin = require("firebase-admin");
 var cert = require("./timeslots-61887-firebase-adminsdk-yikti-7f735e254c.json");
 var data = require("./init-db.json");
+var testConfig = require("./test-config.json");
 
 admin.initializeApp({
     credential: admin.credential.cert(cert),
@@ -33,7 +34,7 @@ var testdb = db.ref("/test");
 testdb.remove()
     .then(function () {
         let wait = 0;
-        let tasksref = testdb.child("tasks");
+        let tasksref = testdb.child(testConfig.userId.concat("/tasks"));
         data.tasks.forEach(function(task) {
             wait++;
             let newtask = tasksref.push(task);
