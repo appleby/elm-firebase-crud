@@ -23,6 +23,18 @@ port signIn : () -> Cmd msg
 port signOut : () -> Cmd msg
 
 
+port fetchTasks : () -> Cmd msg
+
+
+port addTaskPort : Json.Encode.Value -> Cmd msg
+
+
+port deleteTask : TaskId -> Cmd msg
+
+
+port saveTaskPort : Json.Encode.Value -> Cmd msg
+
+
 port signOutOk : (Bool -> msg) -> Sub msg
 
 
@@ -30,6 +42,18 @@ port signInOk : (UserCred -> msg) -> Sub msg
 
 
 port signInErr : (AuthError -> msg) -> Sub msg
+
+
+port fetchTasksOk : (Json.Decode.Value -> msg) -> Sub msg
+
+
+port addTaskOk : (Bool -> msg) -> Sub msg
+
+
+port deleteTaskOk : (Bool -> msg) -> Sub msg
+
+
+port saveTaskOk : (Bool -> msg) -> Sub msg
 
 
 main : Program Never Model Msg
@@ -76,10 +100,6 @@ type Frequency
 
 type alias TaskId =
     String
-
-
-type alias PostResponse =
-    { name : TaskId }
 
 
 type alias Task =
@@ -205,82 +225,14 @@ freqToString freq =
             "monthly"
 
 
-dbUrl : String
-dbUrl =
-    "https://timeslots-61887.firebaseio.com/test/"
+addTask : Task -> Cmd Msg
+addTask task =
+    addTaskPort (encodeTask task)
 
 
-uidUrl : UserId -> String
-uidUrl uid =
-    dbUrl ++ uid ++ "/"
-
-
-addTaskUrl : UserId -> String
-addTaskUrl uid =
-    uidUrl uid ++ "tasks.json"
-
-
-deleteTaskUrl : UserId -> TaskId -> String
-deleteTaskUrl uid tid =
-    uidUrl uid ++ "tasks/" ++ tid ++ ".json"
-
-
-fetchTasksUrl : UserId -> String
-fetchTasksUrl =
-    addTaskUrl
-
-
-saveTaskUrl : UserId -> TaskId -> String
-saveTaskUrl =
-    deleteTaskUrl
-
-
-addTask : UserId -> Task -> Cmd Msg
-addTask uid task =
-    Http.request
-        { body = encodeTask task |> Http.jsonBody
-        , expect = Http.expectJson (addResponseDecoder task)
-        , headers = []
-        , method = "POST"
-        , timeout = Nothing
-        , url = addTaskUrl uid
-        , withCredentials = False
-        }
-        |> Http.send AddTaskDone
-
-
-deleteTask : UserId -> Task -> Cmd Msg
-deleteTask uid task =
-    Http.request
-        { body = Http.emptyBody
-        , expect = Http.expectJson <| Json.Decode.succeed task
-        , headers = []
-        , method = "DELETE"
-        , timeout = Nothing
-        , url = deleteTaskUrl uid task.id
-        , withCredentials = False
-        }
-        |> Http.send DeleteTaskDone
-
-
-fetchTasks : UserId -> Cmd Msg
-fetchTasks uid =
-    Http.get (fetchTasksUrl uid) taskListDecoder
-        |> Http.send FetchTasksDone
-
-
-saveTask : UserId -> Task -> Cmd Msg
-saveTask uid task =
-    Http.request
-        { body = encodeTask task |> Http.jsonBody
-        , expect = Http.expectJson taskDecoder
-        , headers = []
-        , method = "PUT"
-        , timeout = Nothing
-        , url = (saveTaskUrl uid task.id)
-        , withCredentials = False
-        }
-        |> Http.send SaveTaskDone
+saveTask : Task -> Cmd Msg
+saveTask task =
+    saveTaskPort (encodeTaskWithId task)
 
 
 goto : Route -> Cmd Msg
@@ -292,6 +244,16 @@ encodeTask : Task -> Json.Encode.Value
 encodeTask task =
     Json.Encode.object
         [ ( "title", Json.Encode.string task.title )
+        , ( "tags", List.map Json.Encode.string task.tags |> Json.Encode.list )
+        , ( "frequency", Json.Encode.string (freqToString task.freq) )
+        ]
+
+
+encodeTaskWithId : Task -> Json.Encode.Value
+encodeTaskWithId task =
+    Json.Encode.object
+        [ ( "id", Json.Encode.string task.id )
+        , ( "title", Json.Encode.string task.title )
         , ( "tags", List.map Json.Encode.string task.tags |> Json.Encode.list )
         , ( "frequency", Json.Encode.string (freqToString task.freq) )
         ]
@@ -315,18 +277,6 @@ taskDecoder =
         (Json.Decode.field "frequency" Json.Decode.string |> Json.Decode.andThen freqDecoder)
 
 
-postResponseDecoder : Json.Decode.Decoder PostResponse
-postResponseDecoder =
-    Json.Decode.map PostResponse (Json.Decode.field "name" Json.Decode.string)
-
-
-addResponseDecoder : Task -> Json.Decode.Decoder Task
-addResponseDecoder task =
-    postResponseDecoder
-        |> Json.Decode.andThen
-            (\pr -> Json.Decode.succeed { task | id = pr.name })
-
-
 freqDecoder : String -> Json.Decode.Decoder Frequency
 freqDecoder str =
     case freqOfString str of
@@ -337,23 +287,19 @@ freqDecoder str =
             Json.Decode.fail ("unable to decode frequency: " ++ msg)
 
 
-type alias ApiTaskResult =
-    Result Http.Error Task
-
-
 type Msg
     = OnLocationChange Location
     | Goto Route
-    | FetchTasksDone (Result Http.Error (List Task))
+    | FetchTasksDone (Result String (List Task))
     | EditTaskTitle String
     | EditTaskTags String
     | EditTaskFrequency String
     | SaveTask
-    | SaveTaskDone ApiTaskResult
+    | SaveTaskDone Bool
     | AddTask
-    | AddTaskDone ApiTaskResult
+    | AddTaskDone Bool
     | DeleteTask Task
-    | DeleteTaskDone ApiTaskResult
+    | DeleteTaskDone Bool
     | SignIn
     | SignInDone (Result AuthError UserCred)
     | SignOut
@@ -407,16 +353,6 @@ signedOut =
     not << signedIn
 
 
-uidOrCrash : Maybe User -> UserId
-uidOrCrash maybeUser =
-    case maybeUser of
-        Just user ->
-            user.uid
-
-        Nothing ->
-            Debug.crash "uidOrCrash: user = Nothing"
-
-
 updateWithSignInCheck : Msg -> Model -> ( Model, Cmd Msg )
 updateWithSignInCheck msg model =
     if signedOut model.user && authRequired msg then
@@ -436,7 +372,7 @@ update msg model =
                 | user = Just user
                 , cred = Just credential
              }
-                ! [ fetchTasks user.uid, goto TasksRoute ]
+                ! [ fetchTasks (), goto TasksRoute ]
             )
 
         SignInDone (Err authErr) ->
@@ -525,36 +461,36 @@ update msg model =
 
         SaveTask ->
             ( updateModelForApiRequest model
-            , saveTask (uidOrCrash model.user) model.pendingTask
+            , saveTask model.pendingTask
             )
 
-        SaveTaskDone apiResult ->
-            handleApiTaskResult model Update apiResult
+        SaveTaskDone succeeded ->
+            handleTaskResult model Update succeeded
 
         AddTask ->
             ( updateModelForApiRequest model
-            , addTask (uidOrCrash model.user) model.pendingTask
+            , addTask model.pendingTask
             )
 
-        AddTaskDone ((Ok _) as apiResult) ->
+        AddTaskDone True ->
             let
                 ( newModel, cmd ) =
-                    handleApiTaskResult model Create apiResult
+                    handleTaskResult model Create True
             in
                 ( { newModel | pendingTask = emptyTask }
                 , cmd
                 )
 
-        AddTaskDone ((Err _) as apiResult) ->
-            handleApiTaskResult model Create apiResult
+        AddTaskDone False ->
+            handleTaskResult model Create False
 
         DeleteTask task ->
             ( updateModelForApiRequest model
-            , deleteTask (uidOrCrash model.user) task
+            , deleteTask task.id
             )
 
-        DeleteTaskDone apiResult ->
-            handleApiTaskResult model Delete apiResult
+        DeleteTaskDone succeeded ->
+            handleTaskResult model Delete succeeded
 
 
 updateModelForApiRequest : Model -> Model
@@ -601,25 +537,20 @@ taskOpToPastTense op =
             "deleted"
 
 
-handleApiTaskResult : Model -> TaskOp -> ApiTaskResult -> ( Model, Cmd Msg )
-handleApiTaskResult model op apiResult =
+handleTaskResult : Model -> TaskOp -> Bool -> ( Model, Cmd Msg )
+handleTaskResult model op succeeded =
     let
         ( displayResult, nextCmd ) =
-            case apiResult of
-                Ok _ ->
-                    ( Just <| Ok <| "Task " ++ (taskOpToPastTense op)
-                    , fetchTasks (uidOrCrash model.user)
-                    )
-
-                Err error ->
-                    let
-                        msg =
-                            "failed to " ++ (taskOpToInfinitive op) ++ " task"
-
-                        _ =
-                            Debug.log msg error
-                    in
-                        ( Just (Err msg), Cmd.none )
+            if succeeded then
+                ( Just <| Ok <| "Task " ++ (taskOpToPastTense op)
+                , fetchTasks ()
+                )
+            else
+                let
+                    msg =
+                        "failed to " ++ (taskOpToInfinitive op) ++ " task"
+                in
+                    ( Just (Err msg), Cmd.none )
     in
         ( { model
             | apiPending = False
@@ -674,12 +605,21 @@ type alias AuthError =
     }
 
 
+decodeTaskListFromValue : Json.Decode.Value -> Result String (List Task)
+decodeTaskListFromValue =
+    Json.Decode.decodeValue taskListDecoder
+
+
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ signInOk (SignInDone << Ok)
         , signInErr (SignInDone << Err)
         , signOutOk SignOutDone
+        , fetchTasksOk (FetchTasksDone << decodeTaskListFromValue)
+        , addTaskOk AddTaskDone
+        , deleteTaskOk DeleteTaskDone
+        , saveTaskOk SaveTaskDone
         ]
 
 
