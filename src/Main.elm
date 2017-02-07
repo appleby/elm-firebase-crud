@@ -38,7 +38,7 @@ port saveTaskPort : Json.Encode.Value -> Cmd msg
 port signOutOk : (Bool -> msg) -> Sub msg
 
 
-port signInOk : (UserCred -> msg) -> Sub msg
+port signInOk : (User -> msg) -> Sub msg
 
 
 port signInErr : (AuthError -> msg) -> Sub msg
@@ -83,7 +83,6 @@ initModel route =
     , displayResult = Nothing
     , pendingTask = emptyTask
     , user = Nothing
-    , cred = Nothing
     }
 
 
@@ -121,7 +120,6 @@ type alias Model =
     , displayResult : Maybe DisplayResult
     , pendingTask : Task
     , user : Maybe User
-    , cred : Maybe Credential
     }
 
 
@@ -301,7 +299,7 @@ type Msg
     | DeleteTask Task
     | DeleteTaskDone Bool
     | SignIn
-    | SignInDone (Result AuthError UserCred)
+    | SignInDone (Result AuthError User)
     | SignOut
     | SignOutDone Bool
 
@@ -367,11 +365,8 @@ update msg model =
         SignIn ->
             ( model, signIn () )
 
-        SignInDone (Ok { user, credential }) ->
-            ({ model
-                | user = Just user
-                , cred = Just credential
-             }
+        SignInDone (Ok user) ->
+            ({ model | user = Just user }
                 ! [ fetchTasks (), goto TasksRoute ]
             )
 
@@ -379,7 +374,6 @@ update msg model =
             -- TODO: display error
             ( { model
                 | user = Nothing
-                , cred = Nothing
                 , tasks = []
               }
             , goto HomeRoute
@@ -391,7 +385,6 @@ update msg model =
         SignOutDone True ->
             ( { model
                 | user = Nothing
-                , cred = Nothing
                 , tasks = []
               }
             , goto HomeRoute
@@ -583,19 +576,6 @@ type alias User =
     , emailVerified : Bool
     , isAnonymous : Bool
     , refreshToken : String
-    }
-
-
-type alias Credential =
-    { accessToken : String
-    , idToken : String
-    , provider : String
-    }
-
-
-type alias UserCred =
-    { user : User
-    , credential : Credential
     }
 
 
