@@ -3,35 +3,15 @@
 exports.subscribe = function(app, firebase) {
     let signIn = function() {
         var provider = new firebase.auth.GoogleAuthProvider();
-        firebase.auth().signInWithPopup(provider)
-            .then(function(userCred) {
-                app.ports.signInOk.send(userCred.user);
-            })
-            .catch(function(error) {
-                console.log(error);
-                let authErr = {
-                    code: error.code || null,
-                    message: error.message || null
-                };
-                app.ports.signInErr.send(authErr);
-            });
+        firebase.auth().signInWithPopup(provider);
     };
 
     let signOut = function() {
-        firebase.auth().signOut()
-            .then(function() {
-                app.ports.signOutOk.send(true);
-            })
-            .catch(function(error) {
-                console.log(error);
-                app.ports.signOutOk.send(false);
-            });
+        firebase.auth().signOut();
     };
 
     let onAuthStateChanged = function(user) {
-        if (!user) {
-            app.ports.signOutOk.send(true);
-        }
+        app.ports.authStateChanged.send(user);
     };
 
     let taskOp = function(fn) {

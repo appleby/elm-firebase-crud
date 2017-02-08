@@ -23,6 +23,9 @@ port signIn : () -> Cmd msg
 port signOut : () -> Cmd msg
 
 
+port authStateChanged : (Maybe User -> msg) -> Sub msg
+
+
 port fetchTasks : () -> Cmd msg
 
 
@@ -33,15 +36,6 @@ port deleteTask : TaskId -> Cmd msg
 
 
 port saveTaskPort : Json.Encode.Value -> Cmd msg
-
-
-port signOutOk : (Bool -> msg) -> Sub msg
-
-
-port signInOk : (User -> msg) -> Sub msg
-
-
-port signInErr : (AuthError -> msg) -> Sub msg
 
 
 port fetchTasksOk : (Json.Decode.Value -> msg) -> Sub msg
@@ -299,9 +293,8 @@ type Msg
     | DeleteTask Task
     | DeleteTaskDone Bool
     | SignIn
-    | SignInDone (Result AuthError User)
     | SignOut
-    | SignOutDone Bool
+    | AuthStateChanged (Maybe User)
 
 
 authRequired : Msg -> Bool
@@ -310,13 +303,10 @@ authRequired msg =
         SignIn ->
             False
 
-        SignInDone _ ->
-            False
-
         SignOut ->
             False
 
-        SignOutDone _ ->
+        AuthStateChanged _ ->
             False
 
         Goto HomeRoute ->
@@ -365,34 +355,14 @@ update msg model =
         SignIn ->
             ( model, signIn () )
 
-        SignInDone (Ok user) ->
-            ({ model | user = Just user }
-                ! [ fetchTasks (), goto TasksRoute ]
-            )
-
-        SignInDone (Err authErr) ->
-            -- TODO: display error
-            ( { model
-                | user = Nothing
-                , tasks = []
-              }
-            , goto HomeRoute
-            )
-
         SignOut ->
             ( model, signOut () )
 
-        SignOutDone True ->
-            ( { model
-                | user = Nothing
-                , tasks = []
-              }
-            , goto HomeRoute
-            )
+        AuthStateChanged (Just user) ->
+            ({ model | user = Just user } ! [ fetchTasks (), goto TasksRoute ])
 
-        SignOutDone False ->
-            -- TODO: display error
-            ( model, Cmd.none )
+        AuthStateChanged Nothing ->
+            ( { model | user = Nothing, tasks = [] }, goto HomeRoute )
 
         Goto newRoute ->
             ( model, goto newRoute )
@@ -593,9 +563,7 @@ decodeTaskListFromValue =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ signInOk (SignInDone << Ok)
-        , signInErr (SignInDone << Err)
-        , signOutOk SignOutDone
+        [ authStateChanged AuthStateChanged
         , fetchTasksOk (FetchTasksDone << decodeTaskListFromValue)
         , addTaskOk AddTaskDone
         , deleteTaskOk DeleteTaskDone
