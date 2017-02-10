@@ -76,6 +76,7 @@ routeToString route =
             "#notfound"
 
 
+goto : Route -> Cmd msg
 goto route =
     Navigation.newUrl (routeToString route)
 
