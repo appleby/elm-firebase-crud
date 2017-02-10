@@ -1,53 +1,17 @@
-port module Main exposing (..)
+module Main exposing (..)
 
 import Bootstrap.Buttons exposing (..)
 import Bootstrap.Forms exposing (..)
 import Bootstrap.Grid exposing (..)
 import Bootstrap.Navbar exposing (..)
+import Data exposing (..)
 import Debug
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput, onSubmit)
-import Http
-import Json.Decode
-import Json.Encode
-import List.Extra
 import Navigation exposing (Location)
+import Ports exposing (..)
 import String
-import UrlParser exposing ((</>))
-
-
-port signIn : () -> Cmd msg
-
-
-port signOut : () -> Cmd msg
-
-
-port authStateChanged : (Maybe User -> msg) -> Sub msg
-
-
-port fetchTasks : () -> Cmd msg
-
-
-port addTaskPort : Json.Encode.Value -> Cmd msg
-
-
-port deleteTask : TaskId -> Cmd msg
-
-
-port saveTaskPort : Json.Encode.Value -> Cmd msg
-
-
-port fetchTasksOk : (Json.Decode.Value -> msg) -> Sub msg
-
-
-port addTaskOk : (Bool -> msg) -> Sub msg
-
-
-port deleteTaskOk : (Bool -> msg) -> Sub msg
-
-
-port saveTaskOk : (Bool -> msg) -> Sub msg
 
 
 main : Program Never Model Msg
@@ -80,29 +44,6 @@ initModel route =
     }
 
 
-emptyTask : Task
-emptyTask =
-    { id = "", title = "", tags = [], freq = Daily }
-
-
-type Frequency
-    = Daily
-    | Weekly
-    | Monthly
-
-
-type alias TaskId =
-    String
-
-
-type alias Task =
-    { id : TaskId
-    , title : String
-    , tags : List String
-    , freq : Frequency
-    }
-
-
 type alias DisplayResult =
     Result String String
 
@@ -115,38 +56,6 @@ type alias Model =
     , pendingTask : Task
     , user : Maybe User
     }
-
-
-type Route
-    = HomeRoute
-    | TasksRoute
-    | TaskEditRoute TaskId
-    | TaskAddRoute
-    | NotFoundRoute
-
-
-routeToString : Route -> String
-routeToString route =
-    case route of
-        HomeRoute ->
-            "#"
-
-        TasksRoute ->
-            "#tasks"
-
-        TaskAddRoute ->
-            "#tasks/add"
-
-        TaskEditRoute id ->
-            "#tasks/" ++ id ++ "/edit"
-
-        NotFoundRoute ->
-            "#notfound"
-
-
-findTaskById : TaskId -> List Task -> Maybe Task
-findTaskById id =
-    List.Extra.find (\t -> t.id == id)
 
 
 resetPageState : Model -> Route -> Model
@@ -166,117 +75,6 @@ resetPageState model newRoute =
             , apiPending = False
             , displayResult = Nothing
         }
-
-
-matchers : UrlParser.Parser (Route -> a) a
-matchers =
-    UrlParser.oneOf
-        [ UrlParser.map HomeRoute UrlParser.top
-        , UrlParser.map TaskAddRoute (UrlParser.s "tasks" </> UrlParser.s "add")
-        , UrlParser.map TaskEditRoute (UrlParser.s "tasks" </> UrlParser.string </> UrlParser.s "edit")
-        , UrlParser.map TasksRoute (UrlParser.s "tasks")
-        ]
-
-
-parseLocation : Location -> Route
-parseLocation location =
-    case (UrlParser.parseHash matchers location) of
-        Just route ->
-            route
-
-        Nothing ->
-            NotFoundRoute
-
-
-freqOfString : String -> Result String Frequency
-freqOfString str =
-    case str of
-        "daily" ->
-            Ok Daily
-
-        "weekly" ->
-            Ok Weekly
-
-        "monthly" ->
-            Ok Monthly
-
-        _ ->
-            Err (str ++ " is not a valid Frequency")
-
-
-freqToString : Frequency -> String
-freqToString freq =
-    case freq of
-        Daily ->
-            "daily"
-
-        Weekly ->
-            "weekly"
-
-        Monthly ->
-            "monthly"
-
-
-addTask : Task -> Cmd Msg
-addTask task =
-    addTaskPort (encodeTask task)
-
-
-saveTask : Task -> Cmd Msg
-saveTask task =
-    saveTaskPort (encodeTaskWithId task)
-
-
-goto : Route -> Cmd Msg
-goto route =
-    Navigation.newUrl (routeToString route)
-
-
-encodeTask : Task -> Json.Encode.Value
-encodeTask task =
-    Json.Encode.object
-        [ ( "title", Json.Encode.string task.title )
-        , ( "tags", List.map Json.Encode.string task.tags |> Json.Encode.list )
-        , ( "frequency", Json.Encode.string (freqToString task.freq) )
-        ]
-
-
-encodeTaskWithId : Task -> Json.Encode.Value
-encodeTaskWithId task =
-    Json.Encode.object
-        [ ( "id", Json.Encode.string task.id )
-        , ( "title", Json.Encode.string task.title )
-        , ( "tags", List.map Json.Encode.string task.tags |> Json.Encode.list )
-        , ( "frequency", Json.Encode.string (freqToString task.freq) )
-        ]
-
-
-taskListDecoder : Json.Decode.Decoder (List Task)
-taskListDecoder =
-    Json.Decode.keyValuePairs taskDecoder
-        |> Json.Decode.andThen
-            (Json.Decode.succeed
-                << List.map (\( id, task ) -> { task | id = id })
-            )
-
-
-taskDecoder : Json.Decode.Decoder Task
-taskDecoder =
-    Json.Decode.map4 Task
-        (Json.Decode.succeed "")
-        (Json.Decode.field "title" Json.Decode.string)
-        (Json.Decode.field "tags" (Json.Decode.list Json.Decode.string))
-        (Json.Decode.field "frequency" Json.Decode.string |> Json.Decode.andThen freqDecoder)
-
-
-freqDecoder : String -> Json.Decode.Decoder Frequency
-freqDecoder str =
-    case freqOfString str of
-        Ok freq ->
-            Json.Decode.succeed freq
-
-        Err msg ->
-            Json.Decode.fail ("unable to decode frequency: " ++ msg)
 
 
 type Msg
@@ -521,43 +319,6 @@ handleTaskResult model op succeeded =
           }
         , nextCmd
         )
-
-
-type alias UserId =
-    String
-
-
-type alias UserInfo =
-    { displayName : String
-    , email : String
-    , photoURL : String
-    , providerId : String
-    , uid : UserId
-    }
-
-
-type alias User =
-    { displayName : String
-    , email : String
-    , photoURL : String
-    , providerId : String
-    , uid : UserId
-    , providerData : List UserInfo
-    , emailVerified : Bool
-    , isAnonymous : Bool
-    , refreshToken : String
-    }
-
-
-type alias AuthError =
-    { code : Maybe String
-    , message : Maybe String
-    }
-
-
-decodeTaskListFromValue : Json.Decode.Value -> Result String (List Task)
-decodeTaskListFromValue =
-    Json.Decode.decodeValue taskListDecoder
 
 
 subscriptions : Model -> Sub Msg
