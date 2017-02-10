@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import Auth
 import Bootstrap.Buttons exposing (..)
 import Bootstrap.Forms exposing (..)
 import Bootstrap.Grid exposing (..)
@@ -40,7 +41,7 @@ initModel route =
     , apiPending = False
     , displayResult = Nothing
     , pendingTask = emptyTask
-    , user = Nothing
+    , authModel = Auth.initModel
     }
 
 
@@ -54,7 +55,7 @@ type alias Model =
     , apiPending : Bool
     , displayResult : Maybe DisplayResult
     , pendingTask : Task
-    , user : Maybe User
+    , authModel : Auth.Model
     }
 
 
@@ -90,22 +91,14 @@ type Msg
     | AddTaskDone Bool
     | DeleteTask Task
     | DeleteTaskDone Bool
-    | SignIn
-    | SignOut
-    | AuthStateChanged (Maybe User)
+    | AuthMsg Auth.Msg
 
 
 authRequired : Msg -> Bool
 authRequired msg =
     case msg of
-        SignIn ->
-            False
-
-        SignOut ->
-            False
-
-        AuthStateChanged _ ->
-            False
+        AuthMsg msg ->
+            Auth.authRequired msg
 
         Goto HomeRoute ->
             False
@@ -122,26 +115,9 @@ authRequired msg =
             True
 
 
-signedIn : Maybe User -> Bool
-signedIn maybeUser =
-    -- TODO: Maybe.Extra.isJust from elm-community?
-    case maybeUser of
-        Just _ ->
-            True
-
-        Nothing ->
-            False
-
-
-signedOut : Maybe User -> Bool
-signedOut =
-    -- TODO: Maybe.Extra.isNothing from elm-community?
-    not << signedIn
-
-
 updateWithSignInCheck : Msg -> Model -> ( Model, Cmd Msg )
 updateWithSignInCheck msg model =
-    if signedOut model.user && authRequired msg then
+    if Auth.signedOut model.authModel && authRequired msg then
         ( model, signIn () )
     else
         update msg model
@@ -150,17 +126,14 @@ updateWithSignInCheck msg model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        SignIn ->
-            ( model, signIn () )
-
-        SignOut ->
-            ( model, signOut () )
-
-        AuthStateChanged (Just user) ->
-            ({ model | user = Just user } ! [ fetchTasks (), goto TasksRoute ])
-
-        AuthStateChanged Nothing ->
-            ( { model | user = Nothing, tasks = [] }, goto HomeRoute )
+        AuthMsg authMsg ->
+            let
+                ( subModel, subCmd ) =
+                    Auth.update authMsg model.authModel
+            in
+                ( { model | authModel = subModel }
+                , Cmd.map AuthMsg subCmd
+                )
 
         Goto newRoute ->
             ( model, goto newRoute )
@@ -324,7 +297,7 @@ handleTaskResult model op succeeded =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ authStateChanged AuthStateChanged
+        [ authStateChanged Auth.AuthStateChanged |> Sub.map AuthMsg
         , fetchTasksOk (FetchTasksDone << decodeTaskListFromValue)
         , addTaskOk AddTaskDone
         , deleteTaskOk DeleteTaskDone
@@ -344,29 +317,9 @@ navLink currentRoute linkTo linkText =
         li attrs [ a [ href (routeToString linkTo) ] [ text linkText ] ]
 
 
-signInOut : Maybe User -> Html Msg
-signInOut maybeUser =
-    case maybeUser of
-        Just user ->
-            navbarList
-                NavbarNav
-                NavbarRight
-                []
-                [ li [] [ p [ class "navbar-text" ] [ text user.displayName ] ]
-                , li [] [ a [ onClick SignOut ] [ text "Sign Out" ] ]
-                ]
-
-        Nothing ->
-            navbarList
-                NavbarNav
-                NavbarRight
-                []
-                [ li [] [ a [ onClick SignIn ] [ text "Sign In" ] ] ]
-
-
-navLinks : Route -> Maybe User -> List (Html Msg)
-navLinks currentRoute maybeUser =
-    if signedIn maybeUser then
+navLinks : Route -> Auth.Model -> List (Html Msg)
+navLinks currentRoute authModel =
+    if Auth.signedIn authModel then
         [ navLink currentRoute TasksRoute "List Tasks"
         , navLink currentRoute TaskAddRoute "Add Task"
         ]
@@ -374,8 +327,8 @@ navLinks currentRoute maybeUser =
         []
 
 
-myNavbar : Route -> Maybe User -> Html Msg
-myNavbar currentRoute maybeUser =
+myNavbar : Route -> Auth.Model -> Html Msg
+myNavbar currentRoute authModel =
     navbar
         DefaultNavbar
         [ class "navbar-static-top" ]
@@ -393,8 +346,8 @@ myNavbar currentRoute maybeUser =
                     NavbarNav
                     NavbarDefault
                     []
-                    (navLinks currentRoute maybeUser)
-                , signInOut maybeUser
+                    (navLinks currentRoute authModel)
+                , Auth.signInOut authModel |> Html.map AuthMsg
                 ]
             ]
         ]
@@ -562,6 +515,6 @@ page model =
 view : Model -> Html Msg
 view model =
     div []
-        [ myNavbar model.route model.user
+        [ myNavbar model.route model.authModel
         , containerWithAlerts model.displayResult (page model)
         ]
