@@ -1,6 +1,5 @@
 module Data exposing (..)
 
-import List.Extra
 import Navigation exposing (Location)
 import UrlParser exposing ((</>), s, string, top)
 
@@ -84,11 +83,6 @@ goto route =
 emptyTask : Task
 emptyTask =
     { id = "", title = "", tags = [], freq = Daily }
-
-
-findTaskById : TaskId -> List Task -> Maybe Task
-findTaskById id =
-    List.Extra.find (\t -> t.id == id)
 
 
 matchers : UrlParser.Parser (Route -> a) a

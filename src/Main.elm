@@ -13,6 +13,7 @@ import Html.Events exposing (onClick, onInput, onSubmit)
 import Navigation exposing (Location)
 import Ports exposing (..)
 import String
+import TaskList exposing (..)
 
 
 main : Program Never Model Msg
@@ -36,12 +37,12 @@ init location =
 
 initModel : Route -> Model
 initModel route =
-    { tasks = []
-    , route = route
+    { route = route
     , apiPending = False
     , displayResult = Nothing
     , pendingTask = emptyTask
     , authModel = Auth.initModel
+    , taskListModel = TaskList.initModel
     }
 
 
@@ -50,12 +51,12 @@ type alias DisplayResult =
 
 
 type alias Model =
-    { tasks : List Task
-    , route : Route
+    { route : Route
     , apiPending : Bool
     , displayResult : Maybe DisplayResult
     , pendingTask : Task
     , authModel : Auth.Model
+    , taskListModel : TaskList.Model
     }
 
 
@@ -65,7 +66,7 @@ resetPageState model newRoute =
         pending =
             case newRoute of
                 TaskEditRoute taskId ->
-                    findTaskById taskId model.tasks
+                    TaskList.findTaskById taskId model.taskListModel
                         |> Maybe.withDefault emptyTask
 
                 _ ->
@@ -81,7 +82,6 @@ resetPageState model newRoute =
 type Msg
     = OnLocationChange Location
     | Goto Route
-    | FetchTasksDone (Result String (List Task))
     | EditTaskTitle String
     | EditTaskTags String
     | EditTaskFrequency String
@@ -89,9 +89,8 @@ type Msg
     | SaveTaskDone Bool
     | AddTask
     | AddTaskDone Bool
-    | DeleteTask Task
-    | DeleteTaskDone Bool
     | AuthMsg Auth.Msg
+    | TaskListMsg TaskList.Msg
 
 
 authRequired : Msg -> Bool
@@ -99,6 +98,9 @@ authRequired msg =
     case msg of
         AuthMsg msg ->
             Auth.authRequired msg
+
+        TaskListMsg msg ->
+            TaskList.authRequired msg
 
         Goto HomeRoute ->
             False
@@ -135,6 +137,15 @@ update msg model =
                 , Cmd.map AuthMsg subCmd
                 )
 
+        TaskListMsg taskListMsg ->
+            let
+                ( subModel, subCmd ) =
+                    TaskList.update taskListMsg model.taskListModel
+            in
+                ( { model | taskListModel = subModel }
+                , Cmd.map TaskListMsg subCmd
+                )
+
         Goto newRoute ->
             ( model, goto newRoute )
 
@@ -147,16 +158,6 @@ update msg model =
                     resetPageState model newRoute
             in
                 ( { resetModel | route = newRoute }, Cmd.none )
-
-        FetchTasksDone (Ok tasks) ->
-            ( { model | tasks = tasks }, Cmd.none )
-
-        FetchTasksDone (Err error) ->
-            let
-                _ =
-                    Debug.log "failed to fetch tasks" error
-            in
-                ( model, Cmd.none )
 
         EditTaskTitle title ->
             let
@@ -217,14 +218,6 @@ update msg model =
 
         AddTaskDone False ->
             handleTaskResult model Create False
-
-        DeleteTask task ->
-            ( updateModelForApiRequest model
-            , deleteTask task.id
-            )
-
-        DeleteTaskDone succeeded ->
-            handleTaskResult model Delete succeeded
 
 
 updateModelForApiRequest : Model -> Model
@@ -298,9 +291,9 @@ subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ authStateChanged Auth.AuthStateChanged |> Sub.map AuthMsg
-        , fetchTasksOk (FetchTasksDone << decodeTaskListFromValue)
+        , fetchTasksOk (TaskList.FetchTasksDone << decodeTaskListFromValue) |> Sub.map TaskListMsg
         , addTaskOk AddTaskDone
-        , deleteTaskOk DeleteTaskDone
+        , deleteTaskOk TaskList.DeleteTaskDone |> Sub.map TaskListMsg
         , saveTaskOk SaveTaskDone
         ]
 
@@ -350,44 +343,6 @@ myNavbar currentRoute authModel =
                 , Auth.signInOut authModel |> Html.map AuthMsg
                 ]
             ]
-        ]
-
-
-viewTask : Task -> Html Msg
-viewTask task =
-    tr []
-        [ td [] [ text task.title ]
-        , td [] [ text (freqToString task.freq) ]
-        , td [] [ text (String.join ", " task.tags) ]
-        , td []
-            [ div [ class "btn-group" ]
-                [ btn BtnDefault
-                    []
-                    []
-                    [ onClick (Goto <| TaskEditRoute task.id) ]
-                    [ text "edit" ]
-                , btn BtnDefault
-                    []
-                    []
-                    [ onClick (DeleteTask task) ]
-                    [ text "delete" ]
-                ]
-            ]
-        ]
-
-
-viewTasks : List Task -> Html Msg
-viewTasks tasks =
-    table [ class "table" ]
-        [ thead []
-            [ tr []
-                [ th [] [ text "Title" ]
-                , th [] [ text "Frequency" ]
-                , th [] [ text "Tags" ]
-                , th [] [ text "Action" ]
-                ]
-            ]
-        , tbody [] (List.map viewTask tasks)
         ]
 
 
@@ -493,13 +448,13 @@ page model =
             emptyDiv
 
         TasksRoute ->
-            viewTasks model.tasks
+            TaskList.viewTasks model.taskListModel |> Html.map TaskListMsg
 
         TaskAddRoute ->
             editTaskForm AddTask model.pendingTask model.apiPending
 
         TaskEditRoute taskId ->
-            case findTaskById taskId model.tasks of
+            case TaskList.findTaskById taskId model.taskListModel of
                 Just _ ->
                     editTaskForm SaveTask model.pendingTask model.apiPending
 
