@@ -112,6 +112,16 @@ updateWithSignInCheck msg model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Goto newRoute ->
+            ( model, goto newRoute )
+
+        OnLocationChange location ->
+            let
+                newRoute =
+                    parseLocation location
+            in
+                mount { model | route = newRoute } newRoute
+
         AuthMsg authMsg ->
             let
                 ( subModel, subCmd ) =
@@ -138,16 +148,6 @@ update msg model =
                 ( { model | taskAddEditModel = subModel }
                 , Cmd.map TaskAddEditMsg subCmd
                 )
-
-        Goto newRoute ->
-            ( model, goto newRoute )
-
-        OnLocationChange location ->
-            let
-                newRoute =
-                    parseLocation location
-            in
-                mount { model | route = newRoute } newRoute
 
 
 subscriptions : Model -> Sub Msg
