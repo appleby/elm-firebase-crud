@@ -38,6 +38,21 @@ exports.subscribe = function(app, firebase) {
             });
     };
 
+    let fetchTask = function(taskRef, taskId) {
+        let ref = taskRef.child(taskId);
+        ref.once("value")
+            .then(function(snap) {
+                let task = snap.val();
+                if (task) {
+                    task.id = taskId;
+                }
+                app.ports.fetchTaskOk.send(task);
+            })
+            .catch(function(error) {
+                console.log(error);
+            });
+    };
+
     let addTask = function(taskRef, task) {
         taskRef.push(task)
             .then(function(newRef) {
@@ -78,6 +93,7 @@ exports.subscribe = function(app, firebase) {
     app.ports.signIn.subscribe(signIn);
     app.ports.signOut.subscribe(signOut);
     app.ports.fetchTasks.subscribe(taskOp(fetchTasks));
+    app.ports.fetchTask.subscribe(taskOp(fetchTask));
     app.ports.addTaskPort.subscribe(taskOp(addTask));
     app.ports.deleteTask.subscribe(taskOp(deleteTask));
     app.ports.saveTaskPort.subscribe(taskOp(saveTask));

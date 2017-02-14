@@ -17,6 +17,9 @@ port authStateChanged : (Maybe User -> msg) -> Sub msg
 port fetchTasks : () -> Cmd msg
 
 
+port fetchTask : TaskId -> Cmd msg
+
+
 port addTaskPort : Json.Encode.Value -> Cmd msg
 
 
@@ -27,6 +30,9 @@ port saveTaskPort : Json.Encode.Value -> Cmd msg
 
 
 port fetchTasksOk : (Json.Decode.Value -> msg) -> Sub msg
+
+
+port fetchTaskOk : (Json.Decode.Value -> msg) -> Sub msg
 
 
 port addTaskOk : (Bool -> msg) -> Sub msg
@@ -85,6 +91,16 @@ taskDecoder =
         (Json.Decode.field "frequency" Json.Decode.string |> Json.Decode.andThen freqDecoder)
 
 
+maybeTaskWithIdDecoder : Json.Decode.Decoder (Maybe Task)
+maybeTaskWithIdDecoder =
+    Json.Decode.nullable <|
+        Json.Decode.map4 Task
+            (Json.Decode.field "id" Json.Decode.string)
+            (Json.Decode.field "title" Json.Decode.string)
+            (Json.Decode.field "tags" (Json.Decode.list Json.Decode.string))
+            (Json.Decode.field "frequency" Json.Decode.string |> Json.Decode.andThen freqDecoder)
+
+
 freqDecoder : String -> Json.Decode.Decoder Frequency
 freqDecoder str =
     case freqOfString str of
@@ -98,3 +114,13 @@ freqDecoder str =
 decodeTaskListFromValue : Json.Decode.Value -> Result String (List Task)
 decodeTaskListFromValue =
     Json.Decode.decodeValue taskListDecoder
+
+
+decodeTaskFromValue : Json.Decode.Value -> Result String Task
+decodeTaskFromValue jsonValue =
+    case Json.Decode.decodeValue maybeTaskWithIdDecoder jsonValue of
+        Ok maybeTask ->
+            Result.fromMaybe "No such task" maybeTask
+
+        Err msg ->
+            Err msg
