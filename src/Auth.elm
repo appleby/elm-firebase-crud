@@ -1,7 +1,5 @@
 module Auth exposing (..)
 
-import Bootstrap.Forms exposing (..)
-import Bootstrap.Grid exposing (..)
 import Bootstrap.Navbar exposing (..)
 import Data exposing (..)
 import Html exposing (..)
