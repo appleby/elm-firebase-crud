@@ -7,6 +7,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import List.Extra
 import Ports
+import Route exposing (Route(..))
 
 
 type alias Model =
@@ -45,7 +46,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Goto newRoute ->
-            ( model, goto newRoute )
+            ( model, Route.goto newRoute )
 
         FetchTasksDone (Ok tasks) ->
             ( { model | tasks = tasks }, Cmd.none )

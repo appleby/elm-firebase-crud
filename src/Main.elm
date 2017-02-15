@@ -9,6 +9,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Navigation exposing (Location)
 import Ports exposing (..)
+import Route exposing (Route(..))
 import TaskAddEdit exposing (..)
 import TaskList exposing (..)
 
@@ -27,7 +28,7 @@ init : Location -> ( Model, Cmd Msg )
 init location =
     let
         initRoute =
-            parseLocation location
+            Route.parseLocation location
     in
         ( initModel initRoute, Cmd.none )
 
@@ -90,7 +91,7 @@ authRequired msg =
             False
 
         OnLocationChange location ->
-            case parseLocation location of
+            case Route.parseLocation location of
                 HomeRoute ->
                     False
 
@@ -113,12 +114,12 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Goto newRoute ->
-            ( model, goto newRoute )
+            ( model, Route.goto newRoute )
 
         OnLocationChange location ->
             let
                 newRoute =
-                    parseLocation location
+                    Route.parseLocation location
             in
                 mount { model | route = newRoute } newRoute
 
@@ -171,7 +172,7 @@ navLink currentRoute linkTo linkText =
             else
                 []
     in
-        li attrs [ a [ href (routeToString linkTo) ] [ text linkText ] ]
+        li attrs [ a [ href (Route.toString linkTo) ] [ text linkText ] ]
 
 
 navLinks : Route -> Auth.Model -> List (Html Msg)

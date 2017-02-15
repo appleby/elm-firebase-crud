@@ -6,6 +6,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import Ports exposing (..)
+import Route exposing (Route(..))
 
 
 type alias Model =
@@ -33,10 +34,10 @@ update msg model =
             ( model, signOut () )
 
         AuthStateChanged (Just user) ->
-            ({ model | user = Just user } ! [ fetchTasks (), goto TasksRoute ])
+            ({ model | user = Just user } ! [ fetchTasks (), Route.goto TasksRoute ])
 
         AuthStateChanged Nothing ->
-            ( { model | user = Nothing }, goto HomeRoute )
+            ( { model | user = Nothing }, Route.goto HomeRoute )
 
 
 authRequired : Msg -> Bool
