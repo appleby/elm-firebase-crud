@@ -6,7 +6,7 @@ import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
 import List.Extra
-import Ports
+import Ports exposing (..)
 import Route exposing (Route(..))
 
 
@@ -40,6 +40,14 @@ authRequired _ =
 findTaskById : TaskId -> Model -> Maybe Task
 findTaskById id model =
     List.Extra.find (\t -> t.id == id) model.tasks
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.batch
+        [ fetchTasksOk (FetchTasksDone << decodeTaskListFromValue)
+        , deleteTaskOk DeleteTaskDone
+        ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )

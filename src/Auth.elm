@@ -24,6 +24,17 @@ type Msg
     | AuthStateChanged (Maybe User)
 
 
+authRequired : Msg -> Bool
+authRequired _ =
+    False
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.batch
+        [ authStateChanged AuthStateChanged ]
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -38,11 +49,6 @@ update msg model =
 
         AuthStateChanged Nothing ->
             ( { model | user = Nothing }, Route.goto HomeRoute )
-
-
-authRequired : Msg -> Bool
-authRequired _ =
-    False
 
 
 signedIn : Model -> Bool

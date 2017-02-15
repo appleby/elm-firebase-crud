@@ -49,6 +49,15 @@ authRequired _ =
     True
 
 
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.batch
+        [ fetchTaskOk (FetchTaskDone << decodeTaskFromValue)
+        , addTaskOk AddTaskDone
+        , saveTaskOk SaveTaskDone
+        ]
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of

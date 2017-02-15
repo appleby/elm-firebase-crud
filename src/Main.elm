@@ -3,7 +3,6 @@ module Main exposing (..)
 import Auth
 import Bootstrap.Grid exposing (..)
 import Bootstrap.Navbar exposing (..)
-import Data exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput, onSubmit)
@@ -102,6 +101,15 @@ authRequired msg =
             True
 
 
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ Sub.map AuthMsg (Auth.subscriptions model.authModel)
+        , Sub.map TaskAddEditMsg (TaskAddEdit.subscriptions model.taskAddEditModel)
+        , Sub.map TaskListMsg (TaskList.subscriptions model.taskListModel)
+        ]
+
+
 updateWithSignInCheck : Msg -> Model -> ( Model, Cmd Msg )
 updateWithSignInCheck msg model =
     if Auth.signedOut model.authModel && authRequired msg then
@@ -149,18 +157,6 @@ update msg model =
                 ( { model | taskAddEditModel = subModel }
                 , Cmd.map TaskAddEditMsg subCmd
                 )
-
-
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.batch
-        [ authStateChanged Auth.AuthStateChanged |> Sub.map AuthMsg
-        , fetchTaskOk (TaskAddEdit.FetchTaskDone << decodeTaskFromValue) |> Sub.map TaskAddEditMsg
-        , addTaskOk TaskAddEdit.AddTaskDone |> Sub.map TaskAddEditMsg
-        , saveTaskOk TaskAddEdit.SaveTaskDone |> Sub.map TaskAddEditMsg
-        , fetchTasksOk (TaskList.FetchTasksDone << decodeTaskListFromValue) |> Sub.map TaskListMsg
-        , deleteTaskOk TaskList.DeleteTaskDone |> Sub.map TaskListMsg
-        ]
 
 
 navLink : Route -> Route -> String -> Html Msg
