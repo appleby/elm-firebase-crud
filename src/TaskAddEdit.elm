@@ -1,13 +1,31 @@
-module TaskAddEdit exposing (..)
+module TaskAddEdit
+    exposing
+        ( Model
+          -- TODO: Don't expose Msg constructors
+        , Msg(AddTask, SaveTask)
+        , subscriptions
+        , update
+        , view
+        , authRequired
+        , initModel
+        , mountEditCmd
+        )
 
-import Bootstrap.Buttons exposing (..)
-import Bootstrap.Forms exposing (..)
-import Bootstrap.Grid exposing (..)
+import Bootstrap.Buttons exposing (ButtonOption(..), btn)
+import Bootstrap.Forms
+    exposing
+        ( FormAlignmentOption(..)
+        , FormGroupOption(..)
+        , formGroup
+        , formInput
+        , formLabel
+        )
+import Bootstrap.Grid exposing (container, row)
 import Data exposing (..)
 import Debug
-import Html exposing (..)
-import Html.Attributes exposing (..)
-import Html.Events exposing (onClick, onInput, onSubmit)
+import Html exposing (Html, div, i, option, select, strong, text)
+import Html.Attributes exposing (disabled, class, for, id, maxlength, selected, type_, value)
+import Html.Events exposing (onInput, onSubmit)
 import Ports exposing (..)
 import String
 

@@ -1,8 +1,8 @@
 port module Ports exposing (..)
 
-import Data exposing (..)
-import Json.Decode
-import Json.Encode
+import Data exposing (Frequency, User, Task, TaskId, freqToString, freqOfString)
+import Json.Decode as JD
+import Json.Encode as JE
 
 
 port signIn : () -> Cmd msg
@@ -20,19 +20,19 @@ port fetchTasks : () -> Cmd msg
 port fetchTask : TaskId -> Cmd msg
 
 
-port addTaskPort : Json.Encode.Value -> Cmd msg
+port addTaskPort : JE.Value -> Cmd msg
 
 
 port deleteTask : TaskId -> Cmd msg
 
 
-port saveTaskPort : Json.Encode.Value -> Cmd msg
+port saveTaskPort : JE.Value -> Cmd msg
 
 
-port fetchTasksOk : (Json.Decode.Value -> msg) -> Sub msg
+port fetchTasksOk : (JD.Value -> msg) -> Sub msg
 
 
-port fetchTaskOk : (Json.Decode.Value -> msg) -> Sub msg
+port fetchTaskOk : (JD.Value -> msg) -> Sub msg
 
 
 port addTaskOk : (Bool -> msg) -> Sub msg
@@ -54,71 +54,71 @@ saveTask task =
     saveTaskPort (encodeTaskWithId task)
 
 
-encodeTask : Task -> Json.Encode.Value
+encodeTask : Task -> JE.Value
 encodeTask task =
-    Json.Encode.object
-        [ ( "title", Json.Encode.string task.title )
-        , ( "tags", List.map Json.Encode.string task.tags |> Json.Encode.list )
-        , ( "frequency", Json.Encode.string (freqToString task.freq) )
+    JE.object
+        [ ( "title", JE.string task.title )
+        , ( "tags", List.map JE.string task.tags |> JE.list )
+        , ( "frequency", JE.string (freqToString task.freq) )
         ]
 
 
-encodeTaskWithId : Task -> Json.Encode.Value
+encodeTaskWithId : Task -> JE.Value
 encodeTaskWithId task =
-    Json.Encode.object
-        [ ( "id", Json.Encode.string task.id )
-        , ( "title", Json.Encode.string task.title )
-        , ( "tags", List.map Json.Encode.string task.tags |> Json.Encode.list )
-        , ( "frequency", Json.Encode.string (freqToString task.freq) )
+    JE.object
+        [ ( "id", JE.string task.id )
+        , ( "title", JE.string task.title )
+        , ( "tags", List.map JE.string task.tags |> JE.list )
+        , ( "frequency", JE.string (freqToString task.freq) )
         ]
 
 
-taskListDecoder : Json.Decode.Decoder (List Task)
+taskListDecoder : JD.Decoder (List Task)
 taskListDecoder =
-    Json.Decode.keyValuePairs taskDecoder
-        |> Json.Decode.andThen
-            (Json.Decode.succeed
+    JD.keyValuePairs taskDecoder
+        |> JD.andThen
+            (JD.succeed
                 << List.map (\( id, task ) -> { task | id = id })
             )
 
 
-taskDecoder : Json.Decode.Decoder Task
+taskDecoder : JD.Decoder Task
 taskDecoder =
-    Json.Decode.map4 Task
-        (Json.Decode.succeed "")
-        (Json.Decode.field "title" Json.Decode.string)
-        (Json.Decode.field "tags" (Json.Decode.list Json.Decode.string))
-        (Json.Decode.field "frequency" Json.Decode.string |> Json.Decode.andThen freqDecoder)
+    JD.map4 Task
+        (JD.succeed "")
+        (JD.field "title" JD.string)
+        (JD.field "tags" (JD.list JD.string))
+        (JD.field "frequency" JD.string |> JD.andThen freqDecoder)
 
 
-maybeTaskWithIdDecoder : Json.Decode.Decoder (Maybe Task)
+maybeTaskWithIdDecoder : JD.Decoder (Maybe Task)
 maybeTaskWithIdDecoder =
-    Json.Decode.nullable <|
-        Json.Decode.map4 Task
-            (Json.Decode.field "id" Json.Decode.string)
-            (Json.Decode.field "title" Json.Decode.string)
-            (Json.Decode.field "tags" (Json.Decode.list Json.Decode.string))
-            (Json.Decode.field "frequency" Json.Decode.string |> Json.Decode.andThen freqDecoder)
+    JD.nullable <|
+        JD.map4 Task
+            (JD.field "id" JD.string)
+            (JD.field "title" JD.string)
+            (JD.field "tags" (JD.list JD.string))
+            (JD.field "frequency" JD.string |> JD.andThen freqDecoder)
 
 
-freqDecoder : String -> Json.Decode.Decoder Frequency
+freqDecoder : String -> JD.Decoder Frequency
 freqDecoder str =
     case freqOfString str of
         Ok freq ->
-            Json.Decode.succeed freq
+            JD.succeed freq
 
         Err msg ->
-            Json.Decode.fail ("unable to decode frequency: " ++ msg)
+            JD.fail ("unable to decode frequency: " ++ msg)
 
 
-decodeTaskListFromValue : Json.Decode.Value -> Result String (List Task)
+decodeTaskListFromValue : JD.Value -> Result String (List Task)
 decodeTaskListFromValue =
-    Json.Decode.decodeValue taskListDecoder
+    JD.decodeValue taskListDecoder
 
 
-decodeTaskFromValue : Json.Decode.Value -> Result String Task
+decodeTaskFromValue : JD.Value -> Result String Task
 decodeTaskFromValue jsonValue =
-    case Json.Decode.decodeValue maybeTaskWithIdDecoder jsonValue of
+    case JD.decodeValue maybeTaskWithIdDecoder jsonValue of
         Ok maybeTask ->
             Result.fromMaybe "No such task" maybeTask
 

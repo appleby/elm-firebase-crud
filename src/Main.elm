@@ -1,16 +1,16 @@
-module Main exposing (..)
+module Main exposing (main)
 
 import Auth
-import Bootstrap.Grid exposing (..)
+import Bootstrap.Grid exposing (container)
 import Bootstrap.Navbar exposing (..)
-import Html exposing (..)
-import Html.Attributes exposing (..)
-import Html.Events exposing (onClick, onInput, onSubmit)
-import Navigation exposing (Location)
-import Ports exposing (..)
+import Html exposing (Html, div, li, text)
+import Html.Attributes exposing (class, id)
+import Html.Events exposing (onClick)
+import Navigation
+import Ports exposing (signIn)
 import Route exposing (Route(..))
-import TaskAddEdit exposing (..)
-import TaskList exposing (..)
+import TaskAddEdit
+import TaskList
 
 
 main : Program Never Model Msg
@@ -23,7 +23,7 @@ main =
         }
 
 
-init : Location -> ( Model, Cmd Msg )
+init : Navigation.Location -> ( Model, Cmd Msg )
 init location =
     let
         initRoute =
@@ -50,7 +50,7 @@ type alias Model =
 
 
 type Msg
-    = OnLocationChange Location
+    = OnLocationChange Navigation.Location
     | Goto Route
     | AuthMsg Auth.Msg
     | TaskListMsg TaskList.Msg
@@ -214,22 +214,27 @@ emptyDiv =
 
 page : Model -> Html Msg
 page model =
-    case model.route of
-        HomeRoute ->
-            emptyDiv
+    let
+        taskAddEditView msg =
+            TaskAddEdit.view msg model.taskAddEditModel
+                |> Html.map TaskAddEditMsg
+    in
+        case model.route of
+            HomeRoute ->
+                emptyDiv
 
-        TasksRoute ->
-            TaskList.viewTasks model.taskListModel |> Html.map TaskListMsg
+            TasksRoute ->
+                TaskList.viewTasks model.taskListModel |> Html.map TaskListMsg
 
-        TaskAddRoute ->
-            TaskAddEdit.view TaskAddEdit.AddTask model.taskAddEditModel |> Html.map TaskAddEditMsg
+            TaskAddRoute ->
+                taskAddEditView TaskAddEdit.AddTask
 
-        TaskEditRoute taskId ->
-            TaskAddEdit.view TaskAddEdit.SaveTask model.taskAddEditModel |> Html.map TaskAddEditMsg
+            TaskEditRoute _ ->
+                taskAddEditView TaskAddEdit.SaveTask
 
-        NotFoundRoute ->
-            -- TODO: Display 404
-            emptyDiv
+            NotFoundRoute ->
+                -- TODO: Display 404
+                emptyDiv
 
 
 view : Model -> Html Msg

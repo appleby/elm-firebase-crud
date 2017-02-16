@@ -1,11 +1,27 @@
-module Auth exposing (..)
+module Auth
+    exposing
+        ( Model
+        , Msg
+        , subscriptions
+        , update
+        , authRequired
+        , initModel
+        , signedIn
+        , signedOut
+        , signInOut
+        )
 
-import Bootstrap.Navbar exposing (..)
-import Data exposing (..)
-import Html exposing (..)
-import Html.Attributes exposing (..)
+import Bootstrap.Navbar
+    exposing
+        ( NavbarOptions(..)
+        , NavbarListAdjustment(..)
+        , navbarList
+        )
+import Data exposing (User)
+import Html exposing (Html, a, li, p, text)
+import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
-import Ports exposing (..)
+import Ports exposing (authStateChanged, fetchTasks, signIn, signOut)
 import Route exposing (Route(..))
 
 

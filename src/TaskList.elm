@@ -1,12 +1,22 @@
-module TaskList exposing (..)
+module TaskList
+    exposing
+        ( Model
+        , Msg
+        , subscriptions
+        , update
+        , viewTasks
+        , authRequired
+        , initModel
+        , mount
+        )
 
-import Bootstrap.Buttons exposing (..)
-import Data exposing (..)
-import Html exposing (..)
-import Html.Attributes exposing (..)
+import Bootstrap.Buttons exposing (ButtonOption(..), btn)
+import Data exposing (Task, freqToString)
+import Html exposing (Html, div, table, thead, tbody, td, th, tr, text)
+import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import List.Extra
-import Ports exposing (..)
+import Ports
 import Route exposing (Route(..))
 
 
@@ -37,16 +47,10 @@ authRequired _ =
     True
 
 
-findTaskById : TaskId -> Model -> Maybe Task
-findTaskById id model =
-    List.Extra.find (\t -> t.id == id) model.tasks
-
-
-subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ fetchTasksOk (FetchTasksDone << decodeTaskListFromValue)
-        , deleteTaskOk DeleteTaskDone
+        [ Ports.fetchTasksOk (FetchTasksDone << Ports.decodeTaskListFromValue)
+        , Ports.deleteTaskOk DeleteTaskDone
         ]
 
 
