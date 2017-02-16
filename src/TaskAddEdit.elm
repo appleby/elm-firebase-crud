@@ -23,15 +23,12 @@ import Bootstrap.Forms
 import Bootstrap.Grid exposing (container, row)
 import Data exposing (..)
 import Debug
+import DisplayResult exposing (DisplayResult, containerWithAlerts)
 import Html exposing (Html, div, i, option, select, strong, text)
 import Html.Attributes exposing (disabled, class, for, id, maxlength, selected, type_, value)
 import Html.Events exposing (onInput, onSubmit)
 import Ports exposing (..)
 import String
-
-
-type alias DisplayResult =
-    Result String String
 
 
 type alias Model =
@@ -234,26 +231,6 @@ frequencySelect selectedFrequency msg =
             |> select [ class "form-control", onInput msg ]
 
 
-showAlert : Maybe DisplayResult -> Html Msg
-showAlert displayResult =
-    case displayResult of
-        Just (Ok msg) ->
-            div [ class "alert alert-success" ]
-                [ strong [] [ text "Ok! " ]
-                , text msg
-                ]
-
-        Just (Err msg) ->
-            -- TODO: dispaly actual error?
-            div [ class "alert alert-danger" ]
-                [ strong [] [ text "Error! " ]
-                , text msg
-                ]
-
-        Nothing ->
-            div [] []
-
-
 maxInputLength : Int
 maxInputLength =
     256
@@ -296,14 +273,6 @@ editTaskForm submitMsg model =
                 [ text "Save Task ", i [ class "fa fa-spinner fa-spin" ] [] ]
           else
             btn BtnDefault [] [] [ type_ "submit" ] [ text "Save Task" ]
-        ]
-
-
-containerWithAlerts : Maybe DisplayResult -> Html Msg -> Html Msg
-containerWithAlerts displayResult contents =
-    container
-        [ row [ showAlert displayResult ]
-        , row [ contents ]
         ]
 
 
