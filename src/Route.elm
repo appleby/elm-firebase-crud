@@ -1,6 +1,8 @@
-module Route exposing (Route(..), goto, parseLocation, toString)
+module Route exposing (Route(..), goto, linkTo, parseLocation, toString)
 
 import Data exposing (..)
+import Html exposing (Html, a)
+import Html.Attributes exposing (href)
 import Navigation exposing (Location)
 import UrlParser exposing ((</>), s, string, top)
 
@@ -16,6 +18,15 @@ type Route
 goto : Route -> Cmd msg
 goto route =
     Navigation.newUrl (toString route)
+
+
+linkTo : Route -> List (Html.Attribute msg) -> List (Html msg) -> Html msg
+linkTo route attributes content =
+    let
+        attrs =
+            href (toString route) :: attributes
+    in
+        a attrs content
 
 
 matchers : UrlParser.Parser (Route -> a) a

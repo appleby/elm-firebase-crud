@@ -168,7 +168,7 @@ navLink currentRoute linkTo linkText =
             else
                 []
     in
-        li attrs [ a [ href (Route.toString linkTo) ] [ text linkText ] ]
+        li attrs [ Route.linkTo linkTo [] [ text linkText ] ]
 
 
 navLinks : Route -> Auth.Model -> List (Html Msg)
