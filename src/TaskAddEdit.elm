@@ -23,24 +23,25 @@ import Bootstrap.Forms
 import Bootstrap.Grid exposing (container, row)
 import Data exposing (..)
 import Debug
-import DisplayResult exposing (DisplayResult, containerWithAlerts)
+import DisplayResult exposing (containerWithAlerts)
 import Html exposing (Html, div, i, option, select, strong, text)
 import Html.Attributes exposing (disabled, class, for, id, maxlength, selected, type_, value)
 import Html.Events exposing (onInput, onSubmit)
 import Ports exposing (..)
 import String
+import TaskOp exposing (..)
 
 
 type alias Model =
-    { apiPending : Bool
-    , displayResult : Maybe DisplayResult
-    , pendingTask : Task
-    }
+    TaskOper { pendingTask : Task }
 
 
 initModel : Model
 initModel =
-    Model False Nothing emptyTask
+    { apiPending = False
+    , displayResult = Nothing
+    , pendingTask = emptyTask
+    }
 
 
 type Msg
@@ -127,7 +128,7 @@ update msg model =
             )
 
         SaveTaskDone succeeded ->
-            handleTaskResult model Update succeeded
+            handleTaskResult model TaskOp.Update succeeded Cmd.none Cmd.none
 
         AddTask ->
             ( updateModelForApiRequest model
@@ -137,81 +138,14 @@ update msg model =
         AddTaskDone True ->
             let
                 ( newModel, cmd ) =
-                    handleTaskResult model Create True
+                    handleTaskResult model TaskOp.Create True Cmd.none Cmd.none
             in
                 ( { newModel | pendingTask = emptyTask }
                 , cmd
                 )
 
         AddTaskDone False ->
-            handleTaskResult model Create False
-
-
-updateModelForApiRequest : Model -> Model
-updateModelForApiRequest model =
-    { model | apiPending = True, displayResult = Nothing }
-
-
-type TaskOp
-    = Create
-    | Read
-    | Update
-    | Delete
-
-
-taskOpToInfinitive : TaskOp -> String
-taskOpToInfinitive op =
-    case op of
-        Create ->
-            "create"
-
-        Read ->
-            "fetch"
-
-        Update ->
-            "save"
-
-        Delete ->
-            "delete"
-
-
-taskOpToPastTense : TaskOp -> String
-taskOpToPastTense op =
-    case op of
-        Create ->
-            "created"
-
-        Read ->
-            "fetched"
-
-        Update ->
-            "saved"
-
-        Delete ->
-            "deleted"
-
-
-handleTaskResult : Model -> TaskOp -> Bool -> ( Model, Cmd Msg )
-handleTaskResult model op succeeded =
-    let
-        ( displayResult, nextCmd ) =
-            if succeeded then
-                ( Just <| Ok <| "Task " ++ (taskOpToPastTense op)
-                , fetchTasks ()
-                )
-            else
-                let
-                    msg =
-                        "failed to " ++ (taskOpToInfinitive op) ++ " task"
-                in
-                    ( Just (Err msg), Cmd.none )
-    in
-        ( { model
-            | apiPending = False
-            , displayResult = displayResult
-          }
-        , nextCmd
-        )
+            handleTaskResult model TaskOp.Create False Cmd.none Cmd.none
 
 
 frequencySelect : Frequency -> (String -> Msg) -> Html Msg

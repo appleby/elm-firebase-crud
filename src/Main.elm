@@ -232,7 +232,7 @@ page model =
                 emptyDiv
 
             TasksRoute ->
-                TaskList.viewTasks model.taskListModel |> Html.map TaskListMsg
+                TaskList.view model.taskListModel |> Html.map TaskListMsg
 
             TaskAddRoute ->
                 taskAddEditView TaskAddEdit.AddTask

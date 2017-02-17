@@ -4,7 +4,7 @@ module TaskList
         , Msg
         , subscriptions
         , update
-        , viewTasks
+        , view
         , authRequired
         , initModel
         , mount
@@ -12,17 +12,18 @@ module TaskList
 
 import Bootstrap.Buttons exposing (ButtonOption(..), btn)
 import Data exposing (Task, freqToString)
+import DisplayResult exposing (containerWithAlerts)
 import Html exposing (Html, div, table, thead, tbody, td, th, tr, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import List.Extra
 import Ports
 import Route exposing (Route(..))
+import TaskOp exposing (..)
 
 
 type alias Model =
-    { tasks : List Task
-    }
+    TaskOper { tasks : List Task }
 
 
 type Msg
@@ -34,7 +35,7 @@ type Msg
 
 initModel : Model
 initModel =
-    Model []
+    { apiPending = False, displayResult = Nothing, tasks = [] }
 
 
 mount : Cmd Msg
@@ -68,14 +69,17 @@ update msg model =
                 _ =
                     Debug.log "failed to fetch tasks" error
             in
-                ( model, Cmd.none )
+                handleTaskResult model TaskOp.Read False Cmd.none Cmd.none
 
         DeleteTask task ->
             ( model, Ports.deleteTask task.id )
 
-        DeleteTaskDone _ ->
-            -- TODO: display succ / fail
-            ( model, Ports.fetchTasks () )
+        DeleteTaskDone succeeded ->
+            handleTaskResult model
+                TaskOp.Delete
+                succeeded
+                (Ports.fetchTasks ())
+                Cmd.none
 
 
 viewTask : Task -> Html Msg
@@ -114,3 +118,8 @@ viewTasks model =
             ]
         , tbody [] (List.map viewTask model.tasks)
         ]
+
+
+view : Model -> Html Msg
+view model =
+    containerWithAlerts model.displayResult (viewTasks model)
