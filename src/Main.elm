@@ -60,17 +60,25 @@ type Msg
 mount : Model -> Route -> ( Model, Cmd Msg )
 mount model route =
     case route of
-        TaskEditRoute taskId ->
-            ( { model | taskAddEditModel = TaskAddEdit.initModel }
-            , Cmd.map TaskAddEditMsg (TaskAddEdit.mountEditCmd taskId)
-            )
-
         TaskAddRoute ->
             ( { model | taskAddEditModel = TaskAddEdit.initModel }
             , Cmd.none
             )
 
-        _ ->
+        TaskEditRoute taskId ->
+            ( { model | taskAddEditModel = TaskAddEdit.initModel }
+            , Cmd.map TaskAddEditMsg (TaskAddEdit.mountEditCmd taskId)
+            )
+
+        TasksRoute ->
+            ( { model | taskListModel = TaskList.initModel }
+            , Cmd.map TaskListMsg TaskList.mount
+            )
+
+        HomeRoute ->
+            ( model, Cmd.none )
+
+        NotFoundRoute ->
             ( model, Cmd.none )
 
 
