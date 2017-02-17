@@ -3,10 +3,10 @@ module TaskOp
         ( TaskOp(..)
         , TaskOper
         , updateModelForApiRequest
-        , handleTaskResult
+        , handleResult
         )
 
-import DisplayResult exposing (DisplayResult)
+import DisplayResult exposing (ResultDisplayer)
 
 
 type TaskOp
@@ -17,12 +17,12 @@ type TaskOp
 
 
 type alias TaskOper a =
-    { a | apiPending : Bool, displayResult : Maybe DisplayResult }
+    ResultDisplayer { a | apiPending : Bool }
 
 
 updateModelForApiRequest : TaskOper a -> TaskOper a
 updateModelForApiRequest model =
-    { model | apiPending = True, displayResult = Nothing }
+    DisplayResult.nothing { model | apiPending = True }
 
 
 taskOpToInfinitive : TaskOp -> String
@@ -57,30 +57,29 @@ taskOpToPastTense op =
             "deleted"
 
 
-handleTaskResult :
+succMessage : TaskOp -> String
+succMessage op =
+    "Task " ++ (taskOpToPastTense op)
+
+
+failMessage : TaskOp -> String
+failMessage op =
+    "Failed to " ++ (taskOpToInfinitive op) ++ " task"
+
+
+handleResult :
     TaskOper a
     -> TaskOp
     -> Bool
     -> Cmd msg
     -> Cmd msg
     -> ( TaskOper a, Cmd msg )
-handleTaskResult model op succeeded succCmd failCmd =
-    let
-        ( displayResult, nextCmd ) =
-            if succeeded then
-                ( Just <| Ok <| "Task " ++ (taskOpToPastTense op)
-                , succCmd
-                )
-            else
-                let
-                    msg =
-                        "failed to " ++ (taskOpToInfinitive op) ++ " task"
-                in
-                    ( Just (Err msg), failCmd )
-    in
-        ( { model
-            | apiPending = False
-            , displayResult = displayResult
-          }
-        , nextCmd
+handleResult model op succeeded succCmd failCmd =
+    if succeeded then
+        ( DisplayResult.succ (succMessage op) { model | apiPending = False }
+        , succCmd
+        )
+    else
+        ( DisplayResult.fail (failMessage op) { model | apiPending = False }
+        , failCmd
         )

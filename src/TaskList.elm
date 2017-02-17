@@ -16,10 +16,9 @@ import DisplayResult exposing (containerWithAlerts)
 import Html exposing (Html, div, table, thead, tbody, td, th, tr, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
-import List.Extra
 import Ports
 import Route exposing (Route(..))
-import TaskOp exposing (..)
+import TaskOp exposing (TaskOper, updateModelForApiRequest)
 
 
 type alias Model =
@@ -69,13 +68,13 @@ update msg model =
                 _ =
                     Debug.log "failed to fetch tasks" error
             in
-                handleTaskResult model TaskOp.Read False Cmd.none Cmd.none
+                TaskOp.handleResult model TaskOp.Read False Cmd.none Cmd.none
 
         DeleteTask task ->
             ( model, Ports.deleteTask task.id )
 
         DeleteTaskDone succeeded ->
-            handleTaskResult model
+            TaskOp.handleResult model
                 TaskOp.Delete
                 succeeded
                 (Ports.fetchTasks ())
@@ -122,4 +121,4 @@ viewTasks model =
 
 view : Model -> Html Msg
 view model =
-    containerWithAlerts model.displayResult (viewTasks model)
+    containerWithAlerts model (viewTasks model)

@@ -20,7 +20,6 @@ import Bootstrap.Forms
         , formInput
         , formLabel
         )
-import Bootstrap.Grid exposing (container, row)
 import Data exposing (..)
 import Debug
 import DisplayResult exposing (containerWithAlerts)
@@ -29,7 +28,7 @@ import Html.Attributes exposing (disabled, class, for, id, maxlength, selected, 
 import Html.Events exposing (onInput, onSubmit)
 import Ports exposing (..)
 import String
-import TaskOp exposing (..)
+import TaskOp exposing (TaskOper, updateModelForApiRequest)
 
 
 type alias Model =
@@ -128,7 +127,7 @@ update msg model =
             )
 
         SaveTaskDone succeeded ->
-            handleTaskResult model TaskOp.Update succeeded Cmd.none Cmd.none
+            TaskOp.handleResult model TaskOp.Update succeeded Cmd.none Cmd.none
 
         AddTask ->
             ( updateModelForApiRequest model
@@ -138,14 +137,14 @@ update msg model =
         AddTaskDone True ->
             let
                 ( newModel, cmd ) =
-                    handleTaskResult model TaskOp.Create True Cmd.none Cmd.none
+                    TaskOp.handleResult model TaskOp.Create True Cmd.none Cmd.none
             in
                 ( { newModel | pendingTask = emptyTask }
                 , cmd
                 )
 
         AddTaskDone False ->
-            handleTaskResult model TaskOp.Create False Cmd.none Cmd.none
+            TaskOp.handleResult model TaskOp.Create False Cmd.none Cmd.none
 
 
 frequencySelect : Frequency -> (String -> Msg) -> Html Msg
@@ -212,4 +211,4 @@ editTaskForm submitMsg model =
 
 view : Msg -> Model -> Html Msg
 view submitMsg model =
-    containerWithAlerts model.displayResult (editTaskForm submitMsg model)
+    containerWithAlerts model (editTaskForm submitMsg model)
