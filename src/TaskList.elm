@@ -37,9 +37,9 @@ initModel =
     { apiPending = False, displayResult = Nothing, tasks = [] }
 
 
-mount : Cmd Msg
-mount =
-    Ports.fetchTasks ()
+mount : Model -> ( Model, Cmd Msg )
+mount model =
+    ( { initModel | tasks = model.tasks }, Ports.fetchTasks () )
 
 
 authRequired : Msg -> Bool
@@ -47,6 +47,7 @@ authRequired _ =
     True
 
 
+subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ Ports.fetchTasksOk (FetchTasksDone << Ports.decodeTaskListFromValue)

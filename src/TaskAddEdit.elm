@@ -8,7 +8,8 @@ module TaskAddEdit
         , view
         , authRequired
         , initModel
-        , mountEditCmd
+        , mountAdd
+        , mountEdit
         )
 
 import Bootstrap.Buttons exposing (ButtonOption(..), btn)
@@ -54,9 +55,14 @@ type Msg
     | AddTaskDone Bool
 
 
-mountEditCmd : TaskId -> Cmd Msg
-mountEditCmd taskId =
-    fetchTask taskId
+mountAdd : Model -> ( Model, Cmd Msg )
+mountAdd model =
+    ( initModel, Cmd.none )
+
+
+mountEdit : Model -> TaskId -> ( Model, Cmd Msg )
+mountEdit model taskId =
+    ( initModel, fetchTask taskId )
 
 
 authRequired : Msg -> Bool

@@ -59,27 +59,37 @@ type Msg
 
 mount : Model -> Route -> ( Model, Cmd Msg )
 mount model route =
-    case route of
-        TaskAddRoute ->
-            ( { model | taskAddEditModel = TaskAddEdit.initModel }
-            , Cmd.none
-            )
+    let
+        mountAddEdit mountFn =
+            let
+                ( subModel, subCmd ) =
+                    mountFn model.taskAddEditModel
+            in
+                ( { model | taskAddEditModel = subModel }
+                , Cmd.map TaskAddEditMsg subCmd
+                )
+    in
+        case route of
+            TaskAddRoute ->
+                mountAddEdit TaskAddEdit.mountAdd
 
-        TaskEditRoute taskId ->
-            ( { model | taskAddEditModel = TaskAddEdit.initModel }
-            , Cmd.map TaskAddEditMsg (TaskAddEdit.mountEditCmd taskId)
-            )
+            TaskEditRoute taskId ->
+                mountAddEdit (flip TaskAddEdit.mountEdit taskId)
 
-        TasksRoute ->
-            ( { model | taskListModel = TaskList.initModel }
-            , Cmd.map TaskListMsg TaskList.mount
-            )
+            TasksRoute ->
+                let
+                    ( subModel, subCmd ) =
+                        TaskList.mount model.taskListModel
+                in
+                    ( { model | taskListModel = subModel }
+                    , Cmd.map TaskListMsg subCmd
+                    )
 
-        HomeRoute ->
-            ( model, Cmd.none )
+            HomeRoute ->
+                ( model, Cmd.none )
 
-        NotFoundRoute ->
-            ( model, Cmd.none )
+            NotFoundRoute ->
+                ( model, Cmd.none )
 
 
 authRequired : Msg -> Bool
