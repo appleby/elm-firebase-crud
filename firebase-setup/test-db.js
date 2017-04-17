@@ -5,18 +5,28 @@ const cert = require("./timeslots-61887-firebase-adminsdk-yikti-7f735e254c.json"
 const data = require("./init-db.json");
 const testConfig = require("./test-config.json");
 const firebaseConfig = require("../firebase-app-config.json");
+const databaseRules = require("../database.rules.json")
+const authUid = parseUidFromAuthRule(databaseRules.rules.test[".write"]);
 
 admin.initializeApp({
     credential: admin.credential.cert(cert),
     databaseURL: firebaseConfig.databaseURL,
     databaseAuthVariableOverride: {
-        uid: "test-db-setup"
+        uid: authUid,
     }
 });
 
 function die(message) {
     console.log(message);
     process.exit(1);
+}
+
+function parseUidFromAuthRule(rule) {
+    var match = rule.match(/auth.uid\s*==\s*'(.+)'/);
+    if (match === null || match.length < 2 || match[1] === null) {
+	die("Unable to parse uid from auth rule.");
+    }
+    return match[1];
 }
 
 function waituntil(done) {
