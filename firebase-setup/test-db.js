@@ -1,10 +1,10 @@
 'use-strict';
 
-var admin = require("firebase-admin");
-var cert = require("./timeslots-61887-firebase-adminsdk-yikti-7f735e254c.json");
-var data = require("./init-db.json");
-var testConfig = require("./test-config.json");
-var firebaseConfig = require("../firebase-app-config.json");
+const admin = require("firebase-admin");
+const cert = require("./timeslots-61887-firebase-adminsdk-yikti-7f735e254c.json");
+const data = require("./init-db.json");
+const testConfig = require("./test-config.json");
+const firebaseConfig = require("../firebase-app-config.json");
 
 admin.initializeApp({
     credential: admin.credential.cert(cert),
