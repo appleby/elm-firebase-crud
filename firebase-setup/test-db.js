@@ -1,7 +1,7 @@
 'use-strict';
 
 const admin = require("firebase-admin");
-const cert = require("./timeslots-61887-firebase-adminsdk-yikti-7f735e254c.json");
+const cert = require("./firebase-adminsdk-service-account-private-key.json");
 const data = require("./init-db.json");
 const testConfig = require("./test-config.json");
 const firebaseConfig = require("../firebase-app-config.json");
