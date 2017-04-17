@@ -4,7 +4,7 @@
   "description": "Schedules for people who hate schedules.",
   "main": "index.js",
   "scripts": {
-    "firebase-setup-db": "node firebase-setup/test-db.js",
+    "firebase-setup-test-db": "node firebase-setup/setup-test-db.js",
     "build": "webpack",
     "watch": "webpack --watch",
     "serve": "webpack-dev-server --port 3000",
