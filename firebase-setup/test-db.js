@@ -2,7 +2,7 @@
 
 const admin = require("firebase-admin");
 const cert = require("../secrets/firebase-adminsdk-service-account-private-key.json");
-const data = require("./init-db.json");
+const data = require("./db-data.json");
 const testConfig = require("../secrets/test-config.json");
 const firebaseConfig = require("../secrets/firebase-app-config.json");
 const databaseRules = require("../database.rules.json")
