@@ -1,10 +1,10 @@
 'use-strict';
 
 const admin = require("firebase-admin");
-const cert = require("./firebase-adminsdk-service-account-private-key.json");
+const cert = require("../secrets/firebase-adminsdk-service-account-private-key.json");
 const data = require("./init-db.json");
-const testConfig = require("./test-config.json");
-const firebaseConfig = require("../firebase-app-config.json");
+const testConfig = require("../secrets/test-config.json");
+const firebaseConfig = require("../secrets/firebase-app-config.json");
 const databaseRules = require("../database.rules.json")
 const authUid = parseUidFromAuthRule(databaseRules.rules.test[".write"]);
 

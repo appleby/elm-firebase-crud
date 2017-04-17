@@ -1,10 +1,9 @@
 /elm-stuff
 /node_modules
 /public
-/firebase-setup/test-config.json
+/secrets
 TAGS
 .firebaserc
 database.rules.json
 firebase.json
-firebase-app-config.json
 npm-debug.log

@@ -5,7 +5,7 @@ require('font-awesome/css/font-awesome.css');
 require('./index.html');
 
 var firebase = require("firebase");
-var firebase_config = require("../firebase-app-config.json");
+var firebase_config = require("../secrets/firebase-app-config.json");
 firebase.initializeApp(firebase_config);
 
 var Elm = require('./Main.elm');
