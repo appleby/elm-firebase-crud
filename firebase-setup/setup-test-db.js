@@ -1,9 +1,9 @@
 'use-strict';
 
 const admin = require("firebase-admin");
-const cert = require("../secrets/firebase-adminsdk-service-account-private-key.json");
 const data = require("./db-data.json");
-const testConfig = require("../secrets/test-config.json");
+const cert = require("../secrets/firebase-adminsdk-service-account-private-key.json");
+const config = require("../secrets/setup-test-db-config.json");
 const firebaseConfig = require("../secrets/firebase-app-config.json");
 const databaseRules = require("../database.rules.json")
 const authUid = parseUidFromAuthRule(databaseRules.rules.test[".write"]);
@@ -46,7 +46,7 @@ var testdb = db.ref("/test");
 testdb.remove()
     .then(function () {
         let wait = 0;
-        let tasksref = testdb.child(testConfig.userId.concat("/tasks"));
+        let tasksref = testdb.child(config.userId.concat("/tasks"));
         data.tasks.forEach(function(task) {
             wait++;
             let newtask = tasksref.push(task);
