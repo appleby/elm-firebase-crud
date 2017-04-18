@@ -46,7 +46,7 @@ var testdb = db.ref("/test");
 testdb.remove()
     .then(function () {
         let wait = 0;
-        let tasksref = testdb.child(config.userId.concat("/tasks"));
+        let tasksref = testdb.child("users/" + config.userId + "/tasks");
         data.tasks.forEach(function(task) {
             wait++;
             let newtask = tasksref.push(task);

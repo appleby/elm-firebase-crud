@@ -21,7 +21,7 @@ exports.subscribe = function(app, firebase) {
                 console.log(fn.name, ": currentUser is null");
                 return;
             }
-            let path = "test/" + user.uid + "/tasks";
+            let path = "test/users/" + user.uid + "/tasks";
             let ref = firebase.database().ref(path);
             let args = [ref].concat(Array.prototype.slice.call(arguments));
             fn.apply(null, args);
