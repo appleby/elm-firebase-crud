@@ -3,7 +3,8 @@ module Main exposing (main)
 import Auth
 import Bootstrap.Grid exposing (container)
 import Bootstrap.Navbar exposing (..)
-import Html exposing (Html, div, li, text)
+import Bootstrap.Page exposing (jumbotron)
+import Html exposing (Html, div, h1, i, li, p, text)
 import Html.Attributes exposing (class, id)
 import Html.Events exposing (onClick)
 import Navigation
@@ -227,7 +228,26 @@ myNavbar currentRoute authModel =
 
 emptyDiv : Html Msg
 emptyDiv =
-    div [] []
+    div []
+        []
+
+
+error404 : Html Msg
+error404 =
+    container
+        [ jumbotron []
+            [ h1 []
+                [ i [ class "fa fa-frown-o fa-lg" ] []
+                , text " 404 not found"
+                ]
+            , p []
+                [ text "The page you are attempting to navigate to does not exist." ]
+            , p []
+                [ text "Use your browser's back button, or go to our "
+                , Route.linkTo HomeRoute [] [ text "Home Page" ]
+                ]
+            ]
+        ]
 
 
 page : Model -> Html Msg
@@ -251,8 +271,7 @@ page model =
                 taskAddEditView TaskAddEdit.SaveTask
 
             NotFoundRoute ->
-                -- TODO: Display 404
-                emptyDiv
+                error404
 
 
 view : Model -> Html Msg
