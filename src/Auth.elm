@@ -69,7 +69,7 @@ update msg model =
 
 signedIn : Model -> Bool
 signedIn model =
-    -- TODO: Maybe.Extra.isJust from elm-community?
+    -- Maybe.Extra.isJust from elm-community?
     case model.user of
         Just _ ->
             True
@@ -80,7 +80,7 @@ signedIn model =
 
 signedOut : Model -> Bool
 signedOut =
-    -- TODO: Maybe.Extra.isNothing from elm-community?
+    -- Maybe.Extra.isNothing from elm-community?
     not << signedIn
 
 

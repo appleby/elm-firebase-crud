@@ -120,7 +120,6 @@ update msg model =
                         ( { model | pendingTask = { pending | freq = freq } }, Cmd.none )
 
                 Err str ->
-                    -- TODO: real error handling
                     let
                         _ =
                             Debug.log "unable to convert frequency" str

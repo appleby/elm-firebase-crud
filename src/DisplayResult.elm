@@ -51,7 +51,6 @@ showAlert displayResult =
                 ]
 
         Just (Err msg) ->
-            -- TODO: dispaly actual error?
             div [ class "alert alert-danger" ]
                 [ strong [] [ text "Error! " ]
                 , text msg
