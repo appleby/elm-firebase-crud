@@ -50,7 +50,7 @@ authRequired _ =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ Ports.fetchTasksOk (FetchTasksDone << Ports.decodeTaskListFromValue)
+        [ Ports.fetchTasksOk (FetchTasksDone << Ports.decodeTaskList)
         , Ports.deleteTaskOk DeleteTaskDone
         ]
 

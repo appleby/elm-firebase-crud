@@ -73,7 +73,7 @@ authRequired _ =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ fetchTaskOk (FetchTaskDone << decodeTaskFromValue)
+        [ fetchTaskOk (FetchTaskDone << decodeNullableTask)
         , addTaskOk AddTaskDone
         , saveTaskOk SaveTaskDone
         ]

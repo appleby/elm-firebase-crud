@@ -49,13 +49,16 @@ testdb.remove()
         let tasksref = testdb.child("users/" + config.userId + "/tasks");
         data.tasks.forEach(function(task) {
             wait++;
-            let newtask = tasksref.push(task);
-            newtask.then(function() {
-                console.log("Added task " + newtask.key);
+            let newtaskref = tasksref.push();
+            // Denormalize and store the id in the task as well, to
+            // make encode/decode simpler in Ports.elm and ports.js.
+            task.id = newtaskref.key;
+            newtaskref.set(task).then(function() {
+                console.log("Added task " + newtaskref.key);
                 wait--;
             })
             .catch(function(error) {
-                die("Failed to add task " + newtask.key + ": " + error.message)
+                die("Failed to add task " + newtaskref.key + ": " + error.message)
             });
         });
         setTimeout(waituntil(() => wait == 0), 500);

@@ -46,16 +46,16 @@ port saveTaskOk : (Bool -> msg) -> Sub msg
 
 addTask : Task -> Cmd msg
 addTask task =
-    addTaskPort (encodeTask task)
+    addTaskPort (encodeNewTask task)
 
 
 saveTask : Task -> Cmd msg
 saveTask task =
-    saveTaskPort (encodeTaskWithId task)
+    saveTaskPort (encodeTask task)
 
 
-encodeTask : Task -> JE.Value
-encodeTask task =
+encodeNewTask : Task -> JE.Value
+encodeNewTask task =
     JE.object
         [ ( "title", JE.string task.title )
         , ( "tags", List.map JE.string task.tags |> JE.list )
@@ -63,8 +63,8 @@ encodeTask task =
         ]
 
 
-encodeTaskWithId : Task -> JE.Value
-encodeTaskWithId task =
+encodeTask : Task -> JE.Value
+encodeTask task =
     JE.object
         [ ( "id", JE.string task.id )
         , ( "title", JE.string task.title )
@@ -75,30 +75,18 @@ encodeTaskWithId task =
 
 taskListDecoder : JD.Decoder (List Task)
 taskListDecoder =
+    -- Ignore the keys, since every Task contains a copy at task.id.
     JD.keyValuePairs taskDecoder
-        |> JD.andThen
-            (JD.succeed
-                << List.map (\( id, task ) -> { task | id = id })
-            )
+        |> JD.map (List.map Tuple.second)
 
 
 taskDecoder : JD.Decoder Task
 taskDecoder =
     JD.map4 Task
-        (JD.succeed "")
+        (JD.field "id" JD.string)
         (JD.field "title" JD.string)
         (JD.field "tags" (JD.list JD.string))
         (JD.field "frequency" JD.string |> JD.andThen freqDecoder)
-
-
-maybeTaskWithIdDecoder : JD.Decoder (Maybe Task)
-maybeTaskWithIdDecoder =
-    JD.nullable <|
-        JD.map4 Task
-            (JD.field "id" JD.string)
-            (JD.field "title" JD.string)
-            (JD.field "tags" (JD.list JD.string))
-            (JD.field "frequency" JD.string |> JD.andThen freqDecoder)
 
 
 freqDecoder : String -> JD.Decoder Frequency
@@ -111,14 +99,14 @@ freqDecoder str =
             JD.fail ("unable to decode frequency: " ++ msg)
 
 
-decodeTaskListFromValue : JD.Value -> Result String (List Task)
-decodeTaskListFromValue =
+decodeTaskList : JD.Value -> Result String (List Task)
+decodeTaskList =
     JD.decodeValue taskListDecoder
 
 
-decodeTaskFromValue : JD.Value -> Result String Task
-decodeTaskFromValue jsonValue =
-    case JD.decodeValue maybeTaskWithIdDecoder jsonValue of
+decodeNullableTask : JD.Value -> Result String Task
+decodeNullableTask jsonValue =
+    case JD.decodeValue (JD.nullable taskDecoder) jsonValue of
         Ok maybeTask ->
             Result.fromMaybe "No such task" maybeTask
 
