@@ -1,4 +1,23 @@
-port module Ports exposing (..)
+port module Ports
+    exposing
+        ( addTask
+        , authStateChanged
+        , decodeNullableTask
+        , decodeTaskList
+        , deleteTask
+        , encodeTask
+        , encodeNewTask
+        , fetchTask
+        , fetchTasks
+        , saveTask
+        , signIn
+        , signOut
+        , addTaskOk
+        , deleteTaskOk
+        , fetchTaskOk
+        , fetchTasksOk
+        , saveTaskOk
+        )
 
 import Data exposing (Frequency, User, Task, TaskId, freqToString, freqOfString)
 import Json.Decode as JD
