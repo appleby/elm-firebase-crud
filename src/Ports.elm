@@ -109,7 +109,8 @@ encodeTask task =
 
 decodeTaskList : JD.Value -> Result String (List Task)
 decodeTaskList =
-    JD.decodeValue taskListDecoder
+    JD.decodeValue (JD.nullable taskListDecoder)
+        >> Result.map (Maybe.withDefault [])
 
 
 decodeNullableTask : JD.Value -> Result String Task
