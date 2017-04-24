@@ -1,8 +1,8 @@
-module Route exposing (Route(..), goto, linkTo, parseLocation, toString)
+module Route exposing (Route(..), goto, linkTo, parseLocation, toHref, toString)
 
 import Data exposing (TaskId)
 import Html exposing (Html, a)
-import Html.Attributes exposing (href)
+import Html.Attributes
 import Navigation
 import UrlParser exposing ((</>), s, string, top)
 
@@ -24,7 +24,7 @@ linkTo : Route -> List (Html.Attribute msg) -> List (Html msg) -> Html msg
 linkTo route attributes content =
     let
         attrs =
-            href (toString route) :: attributes
+            toHref route :: attributes
     in
         a attrs content
 
@@ -47,6 +47,11 @@ parseLocation location =
 
         Nothing ->
             NotFoundRoute
+
+
+toHref : Route -> Html.Attribute msg
+toHref =
+    Html.Attributes.href << toString
 
 
 toString : Route -> String
