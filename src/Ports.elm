@@ -138,7 +138,9 @@ taskDecoder =
     JD.map4 Task
         (JD.field "id" JD.string)
         (JD.field "title" JD.string)
-        (JD.field "tags" (JD.list JD.string))
+        (JD.maybe (JD.field "tags" (JD.list JD.string))
+            |> JD.andThen (JD.succeed << Maybe.withDefault [])
+        )
         (JD.field "frequency" JD.string |> JD.andThen freqDecoder)
 
 
