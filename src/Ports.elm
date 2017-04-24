@@ -52,13 +52,13 @@ port saveTaskOk : (Bool -> msg) -> Sub msg
 
 
 addTask : Task -> Cmd msg
-addTask task =
-    addTaskPort (encodeNewTask task)
+addTask =
+    addTaskPort << encodeNewTask
 
 
 saveTask : Task -> Cmd msg
-saveTask task =
-    saveTaskPort (encodeTask task)
+saveTask =
+    saveTaskPort << encodeTask
 
 
 
@@ -74,9 +74,9 @@ commonTaskFields task =
 
 
 encodeNewTask : Task -> JE.Value
-encodeNewTask task =
+encodeNewTask =
     -- New tasks don't yet have a task.id.
-    JE.object (commonTaskFields task)
+    JE.object << commonTaskFields
 
 
 encodeTask : Task -> JE.Value
