@@ -28,8 +28,8 @@ exports.subscribe = function(app, firebase) {
         }
     };
 
-    let fetchTasks = function(taskRef) {
-        taskRef.once("value")
+    let fetchTasks = function(tasksRef) {
+        tasksRef.once("value")
             .then(function(snap) {
                 app.ports.fetchTasksOk.send(snap.val());
             })
@@ -38,8 +38,8 @@ exports.subscribe = function(app, firebase) {
             });
     };
 
-    let fetchTask = function(taskRef, taskId) {
-        let ref = taskRef.child(taskId);
+    let fetchTask = function(tasksRef, taskId) {
+        let ref = tasksRef.child(taskId);
         ref.once("value")
             .then(function(snap) {
                 app.ports.fetchTaskOk.send(snap.val());
@@ -49,8 +49,8 @@ exports.subscribe = function(app, firebase) {
             });
     };
 
-    let addTask = function(taskRef, task) {
-        let newtaskRef = taskRef.push();
+    let addTask = function(tasksRef, task) {
+        let newtaskRef = tasksRef.push();
         task.id = newtaskRef.key;
         newtaskRef.set(task)
             .then(function() {
@@ -62,8 +62,8 @@ exports.subscribe = function(app, firebase) {
             });
     };
 
-    let deleteTask = function(taskRef, taskId) {
-        let ref = taskRef.child(taskId);
+    let deleteTask = function(tasksRef, taskId) {
+        let ref = tasksRef.child(taskId);
         ref.remove()
             .then(function() {
                 app.ports.deleteTaskOk.send(true);
@@ -74,8 +74,8 @@ exports.subscribe = function(app, firebase) {
             });
     };
 
-    let saveTask = function(taskRef, task) {
-        let ref = taskRef.child(task.id);
+    let saveTask = function(tasksRef, task) {
+        let ref = tasksRef.child(task.id);
         ref.set(task)
             .then(function() {
                 app.ports.saveTaskOk.send(true);
