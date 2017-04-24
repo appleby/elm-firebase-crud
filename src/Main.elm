@@ -6,7 +6,6 @@ import Bootstrap.Navbar exposing (..)
 import Bootstrap.Page exposing (jumbotron)
 import Html exposing (Html, div, h1, i, li, p, text)
 import Html.Attributes exposing (class, id)
-import Html.Events exposing (onClick)
 import Navigation
 import Ports exposing (signIn)
 import Route exposing (Route(..))
@@ -52,7 +51,6 @@ type alias Model =
 
 type Msg
     = OnLocationChange Navigation.Location
-    | Goto Route
     | AuthMsg Auth.Msg
     | TaskListMsg TaskList.Msg
     | TaskAddEditMsg TaskAddEdit.Msg
@@ -105,9 +103,6 @@ authRequired msg =
         TaskAddEditMsg msg ->
             TaskAddEdit.authRequired msg
 
-        Goto HomeRoute ->
-            False
-
         OnLocationChange location ->
             case Route.parseLocation location of
                 HomeRoute ->
@@ -115,9 +110,6 @@ authRequired msg =
 
                 _ ->
                     True
-
-        _ ->
-            True
 
 
 subscriptions : Model -> Sub Msg
@@ -140,9 +132,6 @@ updateWithSignInCheck msg model =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Goto newRoute ->
-            ( model, Route.goto newRoute )
-
         OnLocationChange location ->
             let
                 newRoute =
@@ -210,7 +199,7 @@ myNavbar currentRoute authModel =
                 []
                 [ navbarHamburger "#navbar"
                 , navbarBrand
-                    [ onClick (Goto HomeRoute) ]
+                    [ Route.toHref HomeRoute ]
                     [ text "timeslots" ]
                 ]
             , navbarCollapse
