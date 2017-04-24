@@ -29,7 +29,6 @@ type Msg
     = DeleteTask Task
     | DeleteTaskDone Bool
     | FetchTasksDone (Result String (List Task))
-    | Goto Route
 
 
 initModel : Model
@@ -58,9 +57,6 @@ subscriptions _ =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Goto newRoute ->
-            ( model, Route.goto newRoute )
-
         FetchTasksDone (Ok tasks) ->
             ( { model | tasks = tasks }, Cmd.none )
 
@@ -90,10 +86,9 @@ viewTask task =
         , td [] [ text (String.join ", " task.tags) ]
         , td []
             [ div [ class "btn-group" ]
-                [ btn BtnDefault
-                    []
-                    []
-                    [ onClick (Goto <| TaskEditRoute task.id) ]
+                [ Route.linkTo
+                    (TaskEditRoute task.id)
+                    [ class "btn btn-default" ]
                     [ text "edit" ]
                 , btn BtnDefault
                     []
