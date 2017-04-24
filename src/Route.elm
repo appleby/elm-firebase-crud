@@ -1,4 +1,4 @@
-module Route exposing (Route(..), goto, linkTo, parseLocation, toHref, toString)
+module Route exposing (Route(..), goto, linkTo, parse, toHref, toString)
 
 import Data exposing (TaskId)
 import Html exposing (Html, a)
@@ -39,8 +39,8 @@ matchers =
         ]
 
 
-parseLocation : Navigation.Location -> Route
-parseLocation location =
+parse : Navigation.Location -> Route
+parse location =
     case (UrlParser.parseHash matchers location) of
         Just route ->
             route

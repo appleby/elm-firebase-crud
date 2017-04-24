@@ -27,7 +27,7 @@ init : Navigation.Location -> ( Model, Cmd Msg )
 init location =
     let
         initRoute =
-            Route.parseLocation location
+            Route.parse location
     in
         ( initModel initRoute, Cmd.none )
 
@@ -104,7 +104,7 @@ authRequired msg =
             TaskAddEdit.authRequired msg
 
         OnLocationChange location ->
-            case Route.parseLocation location of
+            case Route.parse location of
                 HomeRoute ->
                     False
 
@@ -135,7 +135,7 @@ update msg model =
         OnLocationChange location ->
             let
                 newRoute =
-                    Route.parseLocation location
+                    Route.parse location
             in
                 mount { model | route = newRoute } newRoute
 
