@@ -5,6 +5,9 @@ import Json.Decode as JD
 import Json.Encode as JE
 
 
+-- Auth ports
+
+
 port signIn : () -> Cmd msg
 
 
@@ -14,10 +17,8 @@ port signOut : () -> Cmd msg
 port authStateChanged : (Maybe User -> msg) -> Sub msg
 
 
-port fetchTasks : () -> Cmd msg
 
-
-port fetchTask : TaskId -> Cmd msg
+-- Task ports
 
 
 port addTaskPort : JE.Value -> Cmd msg
@@ -26,19 +27,25 @@ port addTaskPort : JE.Value -> Cmd msg
 port deleteTask : TaskId -> Cmd msg
 
 
+port fetchTask : TaskId -> Cmd msg
+
+
+port fetchTasks : () -> Cmd msg
+
+
 port saveTaskPort : JE.Value -> Cmd msg
-
-
-port fetchTasksOk : (JD.Value -> msg) -> Sub msg
-
-
-port fetchTaskOk : (JD.Value -> msg) -> Sub msg
 
 
 port addTaskOk : (Bool -> msg) -> Sub msg
 
 
 port deleteTaskOk : (Bool -> msg) -> Sub msg
+
+
+port fetchTaskOk : (JD.Value -> msg) -> Sub msg
+
+
+port fetchTasksOk : (JD.Value -> msg) -> Sub msg
 
 
 port saveTaskOk : (Bool -> msg) -> Sub msg
@@ -52,6 +59,10 @@ addTask task =
 saveTask : Task -> Cmd msg
 saveTask task =
     saveTaskPort (encodeTask task)
+
+
+
+-- Encoders
 
 
 encodeNewTask : Task -> JE.Value
@@ -73,30 +84,8 @@ encodeTask task =
         ]
 
 
-taskListDecoder : JD.Decoder (List Task)
-taskListDecoder =
-    -- Ignore the keys, since every Task contains a copy at task.id.
-    JD.keyValuePairs taskDecoder
-        |> JD.map (List.map Tuple.second)
 
-
-taskDecoder : JD.Decoder Task
-taskDecoder =
-    JD.map4 Task
-        (JD.field "id" JD.string)
-        (JD.field "title" JD.string)
-        (JD.field "tags" (JD.list JD.string))
-        (JD.field "frequency" JD.string |> JD.andThen freqDecoder)
-
-
-freqDecoder : String -> JD.Decoder Frequency
-freqDecoder str =
-    case freqOfString str of
-        Ok freq ->
-            JD.succeed freq
-
-        Err msg ->
-            JD.fail ("unable to decode frequency: " ++ msg)
+-- Decoders
 
 
 decodeTaskList : JD.Value -> Result String (List Task)
@@ -112,3 +101,29 @@ decodeNullableTask jsonValue =
 
         Err msg ->
             Err msg
+
+
+freqDecoder : String -> JD.Decoder Frequency
+freqDecoder str =
+    case freqOfString str of
+        Ok freq ->
+            JD.succeed freq
+
+        Err msg ->
+            JD.fail ("unable to decode frequency: " ++ msg)
+
+
+taskDecoder : JD.Decoder Task
+taskDecoder =
+    JD.map4 Task
+        (JD.field "id" JD.string)
+        (JD.field "title" JD.string)
+        (JD.field "tags" (JD.list JD.string))
+        (JD.field "frequency" JD.string |> JD.andThen freqDecoder)
+
+
+taskListDecoder : JD.Decoder (List Task)
+taskListDecoder =
+    -- Ignore the keys, since every Task contains a copy at task.id.
+    JD.keyValuePairs taskDecoder
+        |> JD.map (List.map Tuple.second)
