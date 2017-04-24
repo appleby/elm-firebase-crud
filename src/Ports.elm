@@ -65,23 +65,23 @@ saveTask task =
 -- Encoders
 
 
+commonTaskFields : Task -> List ( String, JE.Value )
+commonTaskFields task =
+    [ ( "title", JE.string task.title )
+    , ( "tags", List.map JE.string task.tags |> JE.list )
+    , ( "frequency", JE.string (freqToString task.freq) )
+    ]
+
+
 encodeNewTask : Task -> JE.Value
 encodeNewTask task =
-    JE.object
-        [ ( "title", JE.string task.title )
-        , ( "tags", List.map JE.string task.tags |> JE.list )
-        , ( "frequency", JE.string (freqToString task.freq) )
-        ]
+    -- New tasks don't yet have a task.id.
+    JE.object (commonTaskFields task)
 
 
 encodeTask : Task -> JE.Value
 encodeTask task =
-    JE.object
-        [ ( "id", JE.string task.id )
-        , ( "title", JE.string task.title )
-        , ( "tags", List.map JE.string task.tags |> JE.list )
-        , ( "frequency", JE.string (freqToString task.freq) )
-        ]
+    JE.object <| ( "id", JE.string task.id ) :: (commonTaskFields task)
 
 
 
