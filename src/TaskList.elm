@@ -13,9 +13,10 @@ module TaskList
 import Bootstrap.Buttons exposing (ButtonOption(..), btn)
 import Data exposing (Task, freqToString)
 import DisplayResult exposing (containerWithAlerts)
-import Html exposing (Html, div, table, thead, tbody, td, th, tr, text)
+import Html exposing (Html, div, table, thead, td, th, tr, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
+import Html.Keyed
 import Ports
 import Route exposing (Route(..))
 import TaskOp exposing (TaskOper, updateModelForApiRequest)
@@ -100,6 +101,11 @@ viewTask task =
         ]
 
 
+viewKeyedTask : Task -> ( String, Html Msg )
+viewKeyedTask task =
+    ( task.id, viewTask task )
+
+
 viewTasks : Model -> Html Msg
 viewTasks model =
     table [ class "table" ]
@@ -111,7 +117,7 @@ viewTasks model =
                 , th [] [ text "Action" ]
                 ]
             ]
-        , tbody [] (List.map viewTask model.tasks)
+        , Html.Keyed.node "tbody" [] (List.map viewKeyedTask model.tasks)
         ]
 
 
