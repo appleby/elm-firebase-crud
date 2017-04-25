@@ -28,62 +28,46 @@ exports.subscribe = function(app, firebase) {
         }
     };
 
-    let fetchTasks = function(tasksRef) {
-        tasksRef.once("value")
-            .then(function(snap) {
-                app.ports.fetchTasksOk.send(snap.val());
+    let sendValToPort = function(thenable, port) {
+        thenable
+            .then(function(snap) { port.send(snap.val()); })
+            .catch(function(error) { console.log(error); });
+    };
+
+    let sendBoolToPort = function(thenable, port) {
+        thenable
+            .then(function() {
+                port.send(true);
             })
             .catch(function(error) {
                 console.log(error);
+                port.send(false);
             });
+    };
+
+    let fetchTasks = function(tasksRef) {
+        sendValToPort(tasksRef.once("value"), app.ports.fetchTasksOk);
     };
 
     let fetchTask = function(tasksRef, taskId) {
-        let ref = tasksRef.child(taskId);
-        ref.once("value")
-            .then(function(snap) {
-                app.ports.fetchTaskOk.send(snap.val());
-            })
-            .catch(function(error) {
-                console.log(error);
-            });
+        let taskRef = tasksRef.child(taskId);
+        sendValToPort(taskRef.once("value"), app.ports.fetchTaskOk);
     };
 
     let addTask = function(tasksRef, task) {
-        let newtaskRef = tasksRef.push();
-        task.id = newtaskRef.key;
-        newtaskRef.set(task)
-            .then(function() {
-                app.ports.addTaskOk.send(true);
-            })
-            .catch(function(error) {
-                console.log(error);
-                app.ports.addTaskOk.send(false);
-            });
+        let taskRef = tasksRef.push();
+        task.id = taskRef.key;
+        sendBoolToPort(taskRef.set(task), app.ports.addTaskOk);
     };
 
     let deleteTask = function(tasksRef, taskId) {
-        let ref = tasksRef.child(taskId);
-        ref.remove()
-            .then(function() {
-                app.ports.deleteTaskOk.send(true);
-            })
-            .catch(function(error) {
-                console.log(error);
-                app.ports.deleteTaskOk.send(false);
-            });
+        let taskRef = tasksRef.child(taskId);
+        sendBoolToPort(taskRef.remove(), app.ports.deleteTaskOk);
     };
 
     let saveTask = function(tasksRef, task) {
-        let ref = tasksRef.child(task.id);
-        ref.set(task)
-            .then(function() {
-                app.ports.saveTaskOk.send(true);
-            })
-            .catch(function(error) {
-                console.log(error);
-                app.ports.saveTaskOk.send(false);
-            });
+        let taskRef = tasksRef.child(task.id);
+        sendBoolToPort(taskRef.set(task), app.ports.saveTaskOk);
     };
 
     firebase.auth().onAuthStateChanged(onAuthStateChanged);
