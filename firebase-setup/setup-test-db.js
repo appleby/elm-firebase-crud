@@ -6,7 +6,7 @@ const cert = require("../secrets/firebase-adminsdk-service-account-private-key.j
 const config = require("../secrets/setup-test-db-config.json");
 const firebaseConfig = require("../secrets/firebase-app-config.json");
 const databaseRules = require("../database.rules.json")
-const authUid = parseUidFromAuthRule(databaseRules.rules.test[".write"]);
+const authUid = parseUidFromAuthRule(databaseRules.rules[".write"]);
 
 admin.initializeApp({
     credential: admin.credential.cert(cert),
@@ -40,13 +40,12 @@ function waituntil(done) {
     }
 }
 
-var db = admin.database();
-var testdb = db.ref("/test");
+var db = admin.database().ref();
 
-testdb.remove()
+db.remove()
     .then(function () {
         let wait = 0;
-        let tasksref = testdb.child("users/" + config.userId + "/tasks");
+        let tasksref = db.child("users/" + config.userId + "/tasks");
         data.tasks.forEach(function(task) {
             wait++;
             let newtaskref = tasksref.push();
@@ -64,5 +63,5 @@ testdb.remove()
         setTimeout(waituntil(() => wait == 0), 500);
     })
     .catch(function(error) {
-        die("Failed to remove /test: " + error.message);
+        die("Failed to remove db root: " + error.message);
     });
