@@ -1,0 +1,19 @@
+{
+    "rules": {
+        ".write": "auth.uid == 'setup-test-db-user'",
+        "users": {
+            "$uid": {
+                ".read": "$uid == auth.uid",
+                ".write": "$uid == auth.uid",
+                "tasks": {
+                    "$tid": {
+			".validate": "newData.hasChildren(['id', 'title', 'frequency'])",
+                        "id": {
+                            ".validate": "newData.isString() && $tid == newData.val()"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

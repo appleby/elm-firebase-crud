@@ -4,5 +4,4 @@
 /secrets
 TAGS
 .firebaserc
-database.rules.json
 npm-debug.log
