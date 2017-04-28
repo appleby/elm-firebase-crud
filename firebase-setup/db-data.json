@@ -1,10 +1,10 @@
 {
     "tasks": [
-        { "title": "Read CLRS",
+        { "title": "Read",
           "frequency": "daily",
           "tags": ["home", "reading", "study"]
         },
-        { "title": "Review Anki",
+        { "title": "Review Kanji",
           "frequency": "daily",
           "tags": ["home", "study"]
         },
@@ -12,9 +12,9 @@
           "frequency": "daily",
           "tags": ["work", "programming"]
         },
-        { "title": "Fast.ai course",
+        { "title": "Online course",
           "frequency": "daily",
-          "tags": ["home", "study", "ml", "course"]
+          "tags": ["home", "study", "course"]
         },
         { "title": "Paint",
           "frequency": "weekly",
