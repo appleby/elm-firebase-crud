@@ -17,7 +17,7 @@ import Bootstrap.Navbar
         , NavbarListAdjustment(..)
         , navbarList
         )
-import Data exposing (User)
+import Data exposing (User, userName)
 import Html exposing (Html, a, li, p, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
@@ -92,7 +92,7 @@ signInOut model =
                 NavbarNav
                 NavbarRight
                 []
-                [ li [] [ p [ class "navbar-text" ] [ text user.displayName ] ]
+                [ li [] [ p [ class "navbar-text" ] [ text (userName user) ] ]
                 , li [] [ a [ onClick SignOut ] [ text "Sign Out" ] ]
                 ]
 

@@ -2,8 +2,8 @@
 
 exports.subscribe = function(app, firebase) {
     let signIn = function() {
-        var provider = new firebase.auth.GoogleAuthProvider();
-        firebase.auth().signInWithPopup(provider);
+        firebase.auth().signInAnonymously()
+            .catch(function(error) { console.log(error); });
     };
 
     let signOut = function() {

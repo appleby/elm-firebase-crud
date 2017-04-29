@@ -24,18 +24,18 @@ type alias UserId =
 
 
 type alias UserInfo =
-    { displayName : String
-    , email : String
-    , photoURL : String
+    { displayName : Maybe String
+    , email : Maybe String
+    , photoURL : Maybe String
     , providerId : String
     , uid : UserId
     }
 
 
 type alias User =
-    { displayName : String
-    , email : String
-    , photoURL : String
+    { displayName : Maybe String
+    , email : Maybe String
+    , photoURL : Maybe String
     , providerId : String
     , uid : UserId
     , providerData : List UserInfo
@@ -43,6 +43,11 @@ type alias User =
     , isAnonymous : Bool
     , refreshToken : String
     }
+
+
+userName : User -> String
+userName user =
+    Maybe.withDefault "Anonymous" user.displayName
 
 
 emptyTask : Task
