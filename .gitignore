@@ -1,7 +1,7 @@
 /elm-stuff
-/node_modules
 /public
 /secrets
+node_modules/
 TAGS
 .firebaserc
 npm-debug.log
