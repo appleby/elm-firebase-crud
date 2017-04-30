@@ -1,5 +1,6 @@
 {
     "rules": {
+        ".write": "auth.uid == 'admin-sdk-service-account'",
         "users": {
             "$uid": {
                 ".read": "$uid == auth.uid",
