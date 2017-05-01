@@ -56,8 +56,8 @@ type Msg
     | TaskAddEditMsg TaskAddEdit.Msg
 
 
-mount : Model -> Route -> ( Model, Cmd Msg )
-mount model route =
+mount : Model -> ( Model, Cmd Msg )
+mount model =
     let
         mountAddEdit mountFn =
             let
@@ -68,7 +68,7 @@ mount model route =
                 , Cmd.map TaskAddEditMsg subCmd
                 )
     in
-        case route of
+        case model.route of
             TaskAddRoute ->
                 mountAddEdit TaskAddEdit.mountAdd
 
@@ -137,7 +137,7 @@ update msg model =
                 newRoute =
                     Route.parse location
             in
-                mount { model | route = newRoute } newRoute
+                mount { model | route = newRoute }
 
         AuthMsg authMsg ->
             let
