@@ -132,7 +132,7 @@ update msg model =
             )
 
         SaveTaskDone succeeded ->
-            ( TaskOp.complete model TaskOp.Update succeeded, Cmd.none )
+            ( TaskOp.complete TaskOp.Update succeeded model, Cmd.none )
 
         AddTask ->
             ( TaskOp.start model, addTask model.pendingTask )
@@ -140,12 +140,12 @@ update msg model =
         AddTaskDone True ->
             let
                 newModel =
-                    TaskOp.complete model TaskOp.Create True
+                    TaskOp.complete TaskOp.Create True model
             in
                 ( { newModel | pendingTask = emptyTask }, Cmd.none )
 
         AddTaskDone False ->
-            ( TaskOp.complete model TaskOp.Create False, Cmd.none )
+            ( TaskOp.complete TaskOp.Create False model, Cmd.none )
 
 
 frequencySelect : Frequency -> (String -> Msg) -> Html Msg

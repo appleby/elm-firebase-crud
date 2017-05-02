@@ -26,11 +26,11 @@ start model =
 
 
 complete :
-    TaskOper a
-    -> TaskOp
+    TaskOp
     -> Bool
     -> TaskOper a
-complete model op succeeded =
+    -> TaskOper a
+complete op succeeded model =
     if succeeded then
         DisplayResult.succ (succMessage op) { model | apiPending = False }
     else
