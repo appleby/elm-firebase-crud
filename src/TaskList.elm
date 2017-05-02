@@ -72,13 +72,13 @@ update msg model =
                 _ =
                     Debug.log "failed to decode tasks" error
             in
-                ( TaskOp.handleResult model TaskOp.Read False, Cmd.none )
+                ( TaskOp.complete model TaskOp.Read False, Cmd.none )
 
         DeleteTask task ->
             ( model, Ports.deleteTask task.id )
 
         DeleteTaskDone succeeded ->
-            ( TaskOp.handleResult model TaskOp.Delete succeeded, Cmd.none )
+            ( TaskOp.complete model TaskOp.Delete succeeded, Cmd.none )
 
 
 viewTask : Task -> Html Msg

@@ -29,7 +29,7 @@ import Html.Attributes exposing (disabled, class, for, id, maxlength, selected, 
 import Html.Events exposing (onInput, onSubmit)
 import Ports exposing (..)
 import String
-import TaskOp exposing (TaskOper, updateModelForApiRequest)
+import TaskOp exposing (TaskOper)
 
 
 type alias Model =
@@ -127,27 +127,25 @@ update msg model =
                         ( model, Cmd.none )
 
         SaveTask ->
-            ( updateModelForApiRequest model
+            ( TaskOp.start model
             , saveTask model.pendingTask
             )
 
         SaveTaskDone succeeded ->
-            ( TaskOp.handleResult model TaskOp.Update succeeded, Cmd.none )
+            ( TaskOp.complete model TaskOp.Update succeeded, Cmd.none )
 
         AddTask ->
-            ( updateModelForApiRequest model
-            , addTask model.pendingTask
-            )
+            ( TaskOp.start model, addTask model.pendingTask )
 
         AddTaskDone True ->
             let
                 newModel =
-                    TaskOp.handleResult model TaskOp.Create True
+                    TaskOp.complete model TaskOp.Create True
             in
                 ( { newModel | pendingTask = emptyTask }, Cmd.none )
 
         AddTaskDone False ->
-            ( TaskOp.handleResult model TaskOp.Create False, Cmd.none )
+            ( TaskOp.complete model TaskOp.Create False, Cmd.none )
 
 
 frequencySelect : Frequency -> (String -> Msg) -> Html Msg

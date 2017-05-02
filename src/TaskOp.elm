@@ -2,8 +2,8 @@ module TaskOp
     exposing
         ( TaskOp(..)
         , TaskOper
-        , updateModelForApiRequest
-        , handleResult
+        , start
+        , complete
         )
 
 import DisplayResult exposing (ResultDisplayer)
@@ -20,9 +20,21 @@ type alias TaskOper a =
     ResultDisplayer { a | apiPending : Bool }
 
 
-updateModelForApiRequest : TaskOper a -> TaskOper a
-updateModelForApiRequest model =
+start : TaskOper a -> TaskOper a
+start model =
     DisplayResult.nothing { model | apiPending = True }
+
+
+complete :
+    TaskOper a
+    -> TaskOp
+    -> Bool
+    -> TaskOper a
+complete model op succeeded =
+    if succeeded then
+        DisplayResult.succ (succMessage op) { model | apiPending = False }
+    else
+        DisplayResult.fail (failMessage op) { model | apiPending = False }
 
 
 taskOpToInfinitive : TaskOp -> String
@@ -65,15 +77,3 @@ succMessage op =
 failMessage : TaskOp -> String
 failMessage op =
     "Failed to " ++ (taskOpToInfinitive op) ++ " task"
-
-
-handleResult :
-    TaskOper a
-    -> TaskOp
-    -> Bool
-    -> TaskOper a
-handleResult model op succeeded =
-    if succeeded then
-        DisplayResult.succ (succMessage op) { model | apiPending = False }
-    else
-        DisplayResult.fail (failMessage op) { model | apiPending = False }
