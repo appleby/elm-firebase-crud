@@ -20,7 +20,7 @@ import Html.Events exposing (onClick)
 import Html.Keyed
 import Ports
 import Route exposing (Route(..))
-import TaskOp exposing (TaskOper, updateModelForApiRequest)
+import TaskOp exposing (TaskOper)
 
 
 type alias Model =
@@ -72,17 +72,13 @@ update msg model =
                 _ =
                     Debug.log "failed to decode tasks" error
             in
-                TaskOp.handleResult model TaskOp.Read False Cmd.none Cmd.none
+                ( TaskOp.handleResult model TaskOp.Read False, Cmd.none )
 
         DeleteTask task ->
             ( model, Ports.deleteTask task.id )
 
         DeleteTaskDone succeeded ->
-            TaskOp.handleResult model
-                TaskOp.Delete
-                succeeded
-                Cmd.none
-                Cmd.none
+            ( TaskOp.handleResult model TaskOp.Delete succeeded, Cmd.none )
 
 
 viewTask : Task -> Html Msg

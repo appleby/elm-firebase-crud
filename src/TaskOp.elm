@@ -71,15 +71,9 @@ handleResult :
     TaskOper a
     -> TaskOp
     -> Bool
-    -> Cmd msg
-    -> Cmd msg
-    -> ( TaskOper a, Cmd msg )
-handleResult model op succeeded succCmd failCmd =
+    -> TaskOper a
+handleResult model op succeeded =
     if succeeded then
-        ( DisplayResult.succ (succMessage op) { model | apiPending = False }
-        , succCmd
-        )
+        DisplayResult.succ (succMessage op) { model | apiPending = False }
     else
-        ( DisplayResult.fail (failMessage op) { model | apiPending = False }
-        , failCmd
-        )
+        DisplayResult.fail (failMessage op) { model | apiPending = False }

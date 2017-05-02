@@ -132,7 +132,7 @@ update msg model =
             )
 
         SaveTaskDone succeeded ->
-            TaskOp.handleResult model TaskOp.Update succeeded Cmd.none Cmd.none
+            ( TaskOp.handleResult model TaskOp.Update succeeded, Cmd.none )
 
         AddTask ->
             ( updateModelForApiRequest model
@@ -141,15 +141,13 @@ update msg model =
 
         AddTaskDone True ->
             let
-                ( newModel, cmd ) =
-                    TaskOp.handleResult model TaskOp.Create True Cmd.none Cmd.none
+                newModel =
+                    TaskOp.handleResult model TaskOp.Create True
             in
-                ( { newModel | pendingTask = emptyTask }
-                , cmd
-                )
+                ( { newModel | pendingTask = emptyTask }, Cmd.none )
 
         AddTaskDone False ->
-            TaskOp.handleResult model TaskOp.Create False Cmd.none Cmd.none
+            ( TaskOp.handleResult model TaskOp.Create False, Cmd.none )
 
 
 frequencySelect : Frequency -> (String -> Msg) -> Html Msg
