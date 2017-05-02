@@ -8,15 +8,16 @@ port module Ports
         , encodeTask
         , encodeNewTask
         , fetchTask
-        , fetchTasks
         , saveTask
         , signIn
         , signOut
+        , subscribeToUserTasks
+        , unSubscribeFromUserTasks
         , addTaskOk
         , deleteTaskOk
         , fetchTaskOk
-        , fetchTasksOk
         , saveTaskOk
+        , userTasksOk
         )
 
 import Data exposing (Frequency, User, Task, TaskId, freqToString, freqOfString)
@@ -49,10 +50,13 @@ port deleteTask : TaskId -> Cmd msg
 port fetchTask : TaskId -> Cmd msg
 
 
-port fetchTasks : () -> Cmd msg
-
-
 port saveTaskPort : JE.Value -> Cmd msg
+
+
+port subscribeToUserTasks : () -> Cmd msg
+
+
+port unSubscribeFromUserTasks : () -> Cmd msg
 
 
 port addTaskOk : (Bool -> msg) -> Sub msg
@@ -64,10 +68,10 @@ port deleteTaskOk : (Bool -> msg) -> Sub msg
 port fetchTaskOk : (JD.Value -> msg) -> Sub msg
 
 
-port fetchTasksOk : (JD.Value -> msg) -> Sub msg
-
-
 port saveTaskOk : (Bool -> msg) -> Sub msg
+
+
+port userTasksOk : (JD.Value -> msg) -> Sub msg
 
 
 addTask : Task -> Cmd msg

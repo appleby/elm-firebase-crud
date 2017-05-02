@@ -21,7 +21,7 @@ import Data exposing (User, userName)
 import Html exposing (Html, a, li, p, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
-import Ports exposing (authStateChanged, fetchTasks, signIn, signOut)
+import Ports exposing (authStateChanged, signIn, signOut)
 import Route exposing (Route(..))
 
 
@@ -61,7 +61,7 @@ update msg model =
             ( model, signOut () )
 
         AuthStateChanged (Just user) ->
-            ({ model | user = Just user } ! [ fetchTasks (), Route.goto TasksRoute ])
+            ( { model | user = Just user }, Route.goto TasksRoute )
 
         AuthStateChanged Nothing ->
             ( { model | user = Nothing }, Route.goto HomeRoute )

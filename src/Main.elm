@@ -91,6 +91,31 @@ mount model =
                 ( model, Cmd.none )
 
 
+unmount : Model -> ( Model, Cmd Msg )
+unmount model =
+    case model.route of
+        TaskAddRoute ->
+            ( model, Cmd.none )
+
+        TaskEditRoute _ ->
+            ( model, Cmd.none )
+
+        TasksRoute ->
+            let
+                ( subModel, subCmd ) =
+                    TaskList.unmount model.taskListModel
+            in
+                ( { model | taskListModel = subModel }
+                , Cmd.map TaskListMsg subCmd
+                )
+
+        HomeRoute ->
+            ( model, Cmd.none )
+
+        NotFoundRoute ->
+            ( model, Cmd.none )
+
+
 authRequired : Msg -> Bool
 authRequired msg =
     case msg of

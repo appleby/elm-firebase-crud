@@ -8,6 +8,7 @@ module TaskList
         , authRequired
         , initModel
         , mount
+        , unmount
         )
 
 import Bootstrap.Buttons exposing (ButtonOption(..), btn)
@@ -29,7 +30,7 @@ type alias Model =
 type Msg
     = DeleteTask Task
     | DeleteTaskDone Bool
-    | FetchTasksDone (Result String (List Task))
+    | GotUserTasks (Result String (List Task))
 
 
 initModel : Model
@@ -39,7 +40,12 @@ initModel =
 
 mount : Model -> ( Model, Cmd Msg )
 mount model =
-    ( { initModel | tasks = model.tasks }, Ports.fetchTasks () )
+    ( initModel, Ports.subscribeToUserTasks () )
+
+
+unmount : Model -> ( Model, Cmd Msg )
+unmount model =
+    ( initModel, Ports.unSubscribeFromUserTasks () )
 
 
 authRequired : Msg -> Bool
@@ -50,7 +56,7 @@ authRequired _ =
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ Ports.fetchTasksOk (FetchTasksDone << Ports.decodeTaskList)
+        [ Ports.userTasksOk (GotUserTasks << Ports.decodeTaskList)
         , Ports.deleteTaskOk DeleteTaskDone
         ]
 
@@ -58,13 +64,13 @@ subscriptions _ =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        FetchTasksDone (Ok tasks) ->
+        GotUserTasks (Ok tasks) ->
             ( { model | tasks = tasks }, Cmd.none )
 
-        FetchTasksDone (Err error) ->
+        GotUserTasks (Err error) ->
             let
                 _ =
-                    Debug.log "failed to fetch tasks" error
+                    Debug.log "failed to decode tasks" error
             in
                 TaskOp.handleResult model TaskOp.Read False Cmd.none Cmd.none
 
@@ -75,7 +81,7 @@ update msg model =
             TaskOp.handleResult model
                 TaskOp.Delete
                 succeeded
-                (Ports.fetchTasks ())
+                Cmd.none
                 Cmd.none
 
 

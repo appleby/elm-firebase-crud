@@ -45,8 +45,14 @@ exports.subscribe = function(app, firebase) {
             });
     };
 
-    let fetchTasks = function(tasksRef) {
-        sendValToPort(tasksRef.once("value"), app.ports.fetchTasksOk);
+    let subscribeToUserTasks = function(tasksRef) {
+        tasksRef.on("value", function(snap) {
+            app.ports.userTasksOk.send(snap.val());
+        });
+    };
+
+    let unSubscribeFromUserTasks = function(tasksRef) {
+        tasksRef.off("value");
     };
 
     let fetchTask = function(tasksRef, taskId) {
@@ -73,7 +79,8 @@ exports.subscribe = function(app, firebase) {
     firebase.auth().onAuthStateChanged(onAuthStateChanged);
     app.ports.signIn.subscribe(signIn);
     app.ports.signOut.subscribe(signOut);
-    app.ports.fetchTasks.subscribe(taskOp(fetchTasks));
+    app.ports.subscribeToUserTasks.subscribe(taskOp(subscribeToUserTasks));
+    app.ports.unSubscribeFromUserTasks.subscribe(taskOp(unSubscribeFromUserTasks));
     app.ports.fetchTask.subscribe(taskOp(fetchTask));
     app.ports.addTaskPort.subscribe(taskOp(addTask));
     app.ports.deleteTask.subscribe(taskOp(deleteTask));
