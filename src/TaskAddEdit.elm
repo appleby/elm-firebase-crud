@@ -140,9 +140,9 @@ update msg model =
         AddTaskDone True ->
             let
                 newModel =
-                    TaskOp.complete TaskOp.Create True model
+                    { model | pendingTask = emptyTask }
             in
-                ( { newModel | pendingTask = emptyTask }, Cmd.none )
+                ( TaskOp.complete TaskOp.Create True newModel, Cmd.none )
 
         AddTaskDone False ->
             ( TaskOp.complete TaskOp.Create False model, Cmd.none )
