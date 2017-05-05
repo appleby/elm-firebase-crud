@@ -2,10 +2,12 @@
 
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+admin.initializeApp(functions.config().firebase);
 
 const data = require("./db-data.json");
+const deleteAccounts = require("./delete-unused-accounts-cron")(admin);
 
-admin.initializeApp(functions.config().firebase);
+exports.deleteUserAccounts = deleteAccounts.accountcleanup;
 
 exports.populateUserData = functions.auth.user().onCreate(function(event) {
     const uid = event.data.uid;
