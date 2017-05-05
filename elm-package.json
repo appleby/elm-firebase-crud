@@ -1,7 +1,7 @@
 {
     "version": "0.1.0",
-    "summary": "Schedules for people who hate schedules.",
-    "repository": "https://github.com/appleby/timeslots.git",
+    "summary": "Example CRUD app with firebase backend.",
+    "repository": "https://github.com/appleby/elm-firebase-crud.git",
     "license": "BSD3",
     "source-directories": [
         "src"

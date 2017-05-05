@@ -225,7 +225,7 @@ myNavbar currentRoute authModel =
                 [ navbarHamburger "#navbar"
                 , navbarBrand
                     [ Route.toHref HomeRoute ]
-                    [ text "timeslots" ]
+                    [ text "elm-firebase-crud" ]
                 ]
             , navbarCollapse
                 [ id "navbar" ]

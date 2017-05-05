@@ -1,7 +1,7 @@
 {
-  "name": "timeslots",
+  "name": "elm-firebase-crud",
   "version": "0.1.0",
-  "description": "Schedules for people who hate schedules.",
+  "description": "Example elm CRUD app with firebase backend.",
   "main": "index.js",
   "scripts": {
     "build": "webpack",
@@ -12,17 +12,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@bitbucket.org/appleby/timeslots.git"
+    "url": "https://github.com/appleby/elm-firebase-crud.git"
   },
   "keywords": [
-    "time-management",
-    "time-tracking",
-    "scheduling",
-    "daily-planning"
+    "elm",
+    "firebase",
+    "crud",
+    "todo"
   ],
   "author": "Mike Appleby",
   "license": "BSD-3-Clause",
-  "homepage": "https://bitbucket.org/appleby/timeslots#readme",
+  "homepage": "https://github.com/appleby/elm-firebase-crud#readme",
   "devDependencies": {
     "css-loader": "^0.26.1",
     "elm-webpack-loader": "^4.2.0",
