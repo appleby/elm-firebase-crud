@@ -1,10 +1,10 @@
 module Main exposing (main)
 
 import Auth
-import Bootstrap.Grid exposing (container)
+import Bootstrap.Grid exposing (container, row)
 import Bootstrap.Navbar exposing (..)
 import Bootstrap.Page exposing (jumbotron)
-import Html exposing (Html, div, h1, i, li, p, text)
+import Html exposing (Html, div, h1, i, li, p, strong, text)
 import Html.Attributes exposing (class, id)
 import Navigation
 import Ports exposing (signIn)
@@ -25,16 +25,13 @@ main =
 
 init : Navigation.Location -> ( Model, Cmd Msg )
 init location =
-    let
-        initRoute =
-            Route.parse location
-    in
-        ( initModel initRoute, Cmd.none )
+    ( initModel location, Cmd.none )
 
 
-initModel : Route -> Model
-initModel route =
-    { route = route
+initModel : Navigation.Location -> Model
+initModel location =
+    { route = Route.parse location
+    , location = location
     , authModel = Auth.initModel
     , taskListModel = TaskList.initModel
     , taskAddEditModel = TaskAddEdit.initModel
@@ -43,6 +40,7 @@ initModel route =
 
 type alias Model =
     { route : Route
+    , location : Navigation.Location
     , authModel : Auth.Model
     , taskListModel : TaskList.Model
     , taskAddEditModel : TaskAddEdit.Model
@@ -159,10 +157,10 @@ update msg model =
     case msg of
         OnLocationChange location ->
             let
-                newRoute =
+                route =
                     Route.parse location
             in
-                mount { model | route = newRoute }
+                mount { model | route = route, location = location }
 
         AuthMsg authMsg ->
             let
@@ -288,9 +286,23 @@ page model =
                 error404
 
 
+deleteDataWarning : Model -> Html Msg
+deleteDataWarning model =
+    if model.location.hostname == "elm-crud.firebaseapp.com" then
+        div [ class "alert alert-warning" ]
+            [ strong [] [ text "Warning! " ]
+            , text "All data will be deleted 30 minutes after login."
+            ]
+    else
+        emptyDiv
+
+
 view : Model -> Html Msg
 view model =
     div []
         [ myNavbar model.route model.authModel
-        , page model
+        , container
+            [ row [ deleteDataWarning model ]
+            , row [ page model ]
+            ]
         ]
