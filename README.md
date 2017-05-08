@@ -58,7 +58,7 @@ First, deploy the firebase rules and cloud functions; then start the dev server.
 
 ``` shell
 firebase deploy --only database,functions
-npm run server
+npm run serve
 ```
 
 The site should now be running at http://localhost:3000/.
