@@ -4,8 +4,8 @@ import Auth
 import Bootstrap.Grid exposing (container, row)
 import Bootstrap.Navbar exposing (..)
 import Bootstrap.Page exposing (jumbotron)
-import Html exposing (Html, div, h1, i, li, p, strong, text)
-import Html.Attributes exposing (class, id)
+import Html exposing (Html, a, div, h1, i, li, p, strong, text)
+import Html.Attributes exposing (class, href, id)
 import Navigation
 import Ports exposing (signIn)
 import Route exposing (Route(..))
@@ -243,18 +243,35 @@ myNavbar currentRoute authModel =
 
 error404 : Html Msg
 error404 =
-    container
-        [ jumbotron []
-            [ h1 []
-                [ i [ class "fa fa-frown-o fa-lg" ] []
-                , text " 404 not found"
-                ]
-            , p []
-                [ text "The page you are attempting to navigate to does not exist." ]
-            , p []
-                [ text "Use your browser's back button, or go to our "
-                , Route.linkTo HomeRoute [] [ text "Home Page" ]
-                ]
+    jumbotron []
+        [ h1 []
+            [ i [ class "fa fa-frown-o fa-lg" ] []
+            , text " 404 not found"
+            ]
+        , p []
+            [ text "The page you are attempting to navigate to does not exist." ]
+        , p []
+            [ text "Use your browser's back button, or go to our "
+            , Route.linkTo HomeRoute [] [ text "Home Page" ]
+            ]
+        ]
+
+
+overview : Html Msg
+overview =
+    jumbotron []
+        [ h1 []
+            [ text "elm-firebase-crud" ]
+        , p [ class "lead" ]
+            [ text "This is an example of an elm app using firebase for it's backend. It does not do anything useful." ]
+        , p []
+            [ text "You can sign in anonymously by clicking the "
+            , strong [] [ text "Sign In" ]
+            , text " link in the top-right corner. "
+            , strong [] [ text "All user data will be deleted 30 minutes after login." ]
+            , text " See the "
+            , a [ href "https://github.com/appleby/elm-firebase-crud/" ] [ text "associated github repo" ]
+            , text " for more info."
             ]
         ]
 
@@ -268,7 +285,7 @@ page model =
     in
         case model.route of
             HomeRoute ->
-                emptyDiv
+                overview
 
             TasksRoute ->
                 TaskList.view model.taskListModel |> Html.map TaskListMsg
