@@ -33,9 +33,9 @@
     "json-loader": "^0.5.4",
     "style-loader": "^0.17.0",
     "url-loader": "^0.5.7",
-    "webpack": "^1.14.0",
+    "webpack": "^2.5.1",
     "webpack-dev-middleware": "^1.10.2",
-    "webpack-dev-server": "^1.16.4",
+    "webpack-dev-server": "^2.4.5",
     "yesno": "0.0.1"
   }
 }

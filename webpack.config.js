@@ -13,32 +13,38 @@ module.exports = {
     },
 
     module: {
-        loaders: [
+        rules: [
             {
                 test: /\.(css|scss)$/,
-                loaders: [
-                    'style-loader',
-                    'css-loader',
-                ]
+                use: [
+                    { loader: 'style-loader' },
+                    { loader: 'css-loader' },
+                ],
             },
             {
                 test:    /\.html$/,
                 exclude: /node_modules/,
-                loader:  'file?name=[name].[ext]',
-            },
-            {
-                test: /\.json$/,
-                exclude: /node_modules/,
-                loader: 'json-loader'
+                loader:  'file-loader',
+                options: {
+                    name: '[name].[ext]',
+                },
             },
             {
                 test:    /\.elm$/,
                 exclude: [/elm-stuff/, /node_modules/],
-                loader:  'elm-webpack?verbose=true&warn=true',
+                loader:  'elm-webpack-loader',
+                options: {
+                    verbose: true,
+                    warn: true,
+                },
             },
             {
                 test: /\.woff(2)?(\?v=[0-9]\.[0-9]\.[0-9])?$/,
-                loader: 'url-loader?limit=10000&mimetype=application/font-woff',
+                loader: 'url-loader',
+                options: {
+                    limit: 10000,
+                    mimetype: 'application/font-woff',
+                },
             },
             {
                 test: /\.(ttf|eot|svg)(\?v=[0-9]\.[0-9]\.[0-9])?$/,
