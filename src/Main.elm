@@ -131,6 +131,9 @@ authRequired msg =
                 HomeRoute ->
                     False
 
+                NotFoundRoute ->
+                    False
+
                 _ ->
                     True
 
