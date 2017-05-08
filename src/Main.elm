@@ -241,12 +241,6 @@ myNavbar currentRoute authModel =
         ]
 
 
-emptyDiv : Html Msg
-emptyDiv =
-    div []
-        []
-
-
 error404 : Html Msg
 error404 =
     container
@@ -297,7 +291,7 @@ deleteDataWarning model =
             , text "All data will be deleted 30 minutes after login."
             ]
     else
-        emptyDiv
+        div [] []
 
 
 view : Model -> Html Msg
