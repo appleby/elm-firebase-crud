@@ -2,16 +2,15 @@
 
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-admin.initializeApp(functions.config().firebase);
+admin.initializeApp();
 
 const data = require("./db-data.json");
 const deleteAccounts = require("./delete-unused-accounts-cron")(admin);
 
 exports.deleteUserAccounts = deleteAccounts.accountcleanup;
 
-exports.populateUserData = functions.auth.user().onCreate(function(event) {
-    const uid = event.data.uid;
-    const tasksRef = admin.database().ref("/users/" + uid + "/tasks");
+exports.populateUserData = functions.auth.user().onCreate(function(user) {
+    const tasksRef = admin.database().ref("/users/" + user.uid + "/tasks");
     return Promise.all(data.tasks.map(function(task) {
         let newRef = tasksRef.push();
         task.id = newRef.key;
@@ -25,7 +24,6 @@ exports.populateUserData = functions.auth.user().onCreate(function(event) {
     }));
 });
 
-exports.cleanupUserData = functions.auth.user().onDelete(function(event) {
-    const uid = event.data.uid;
-    return admin.database().ref("/users/" + uid).remove();
+exports.cleanupUserData = functions.auth.user().onDelete(function(user) {
+    return admin.database().ref("/users/" + user.uid).remove();
 });
