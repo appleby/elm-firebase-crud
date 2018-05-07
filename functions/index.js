@@ -17,9 +17,6 @@ exports.populateUserData = functions.auth.user().onCreate(function(user) {
         return newRef.set(task)
             .then(function() {
                 console.log("Added task " + newRef.key);
-            })
-            .catch(function(error) {
-                console.error("Failed to add task " + newRef.key + ": " + error);
             });
     }));
 });
