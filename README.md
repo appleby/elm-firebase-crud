@@ -1,3 +1,5 @@
+# This repo is no more! It has been archived.
+
 # Overview
 
 This repo contains an example [Elm](http://elm-lang.org/) todo-list application using [firebase](https://firebase.google.com/) for the backend. There is a live demo running at [https://elm-crud.firebaseapp.com](https://elm-crud.firebaseapp.com). The app doesn't do anything useful; It was just an excuse to try out Elm and firebase. You can log in anonymously by clicking the **Sign In** link in the navbar. After login, the task list is populated with some example data. All user accounts and data are automatically wiped 30 minutes after login.
