@@ -4,6 +4,10 @@ This repo contains an example [Elm](http://elm-lang.org/) todo-list application 
 
 The Elm code in this app communicates with the firebase client api via [Elm's javascript Ports](https://guide.elm-lang.org/interop/javascript.html). There is a nice-looking [elmfire] package for interacting with firebase, but, at the time of writing, it's in the process of being updated to work with Elm v0.18.
 
+# Elm version
+
+This demo application targets Elm v0.18. I have no plans to upgrade it to Elm v0.19 or above.
+
 # Dev setup
 
 ## Clone and install npm dependencies
